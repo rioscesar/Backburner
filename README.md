@@ -6,7 +6,7 @@ Backburner brings existing Chrome bookmarks into a small review. Open something 
 
 ![Backburner review](release/screenshot-review.png)
 
-## Status: developer preview 0.1.3
+## Status: developer preview 0.1.4
 
 This is a working extension candidate, not a Chrome Web Store release. Public launch still needs founder session-size calibration, a newcomer walkthrough, and store submission/review. The first preview session learns its size when you finish; that is not yet the final public default.
 
@@ -20,6 +20,8 @@ This is a working extension candidate, not a Chrome Web Store release. Public la
 On Windows, `npm run package` creates `dist/backburner.zip` and extracts its exact runtime contents to `dist/unpacked`. Load the latter to test the package. A ZIP is a store upload artifact, not a one-click consumer install.
 
 ## Actions
+
+The review shows the bookmark's current Chrome folder path beneath its URL for context, not folder management. Long ancestry is shortened visually before the leaf folder; long leaf names wrap. The full path remains available to assistive technology and in its tooltip. Root-level bookmarks and unavailable ancestry are labeled explicitly. Paths are derived from Chrome, refreshed on review and checked before acting, never saved as new metadata or included in notifications.
 
 - **Open bookmark:** visit the page in another tab; the review waits here.
 - **Keep as reference:** leave the bookmark in Chrome and stop asking about it.

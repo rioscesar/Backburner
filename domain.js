@@ -22,6 +22,26 @@ export function flatten(tree) {
   return nodes;
 }
 
+export function folderPath(tree, bookmarkId) {
+  const byId=new Map(), visited=new Set(), stack=[...tree];
+  while(stack.length) {
+    const node=stack.pop();
+    if(visited.has(node))continue;
+    visited.add(node);byId.set(node.id,node);
+    if(Array.isArray(node.children))for(const child of node.children)stack.push(child);
+  }
+  const bookmark=byId.get(bookmarkId), names=[], parents=new Set();
+  if(!bookmark?.url)return ['Folder unavailable'];
+  let id=bookmark.parentId;
+  while(true) {
+    const parent=byId.get(id);
+    if(!parent || parent.url)return ['Folder unavailable',...names.reverse()];
+    if(parents.has(id))return ['Folder unavailable',...(names.length?[names[0]]:[])];
+    if(id==='0' && parent.parentId===undefined)return names.length?names.reverse():['Bookmarks root'];
+    parents.add(id);names.push(parent.title || 'Unnamed folder');id=parent.parentId;
+  }
+}
+
 const validDate = value => Number.isFinite(value) && value > 0 && value <= Date.now() ? value : 0;
 export const activityDate = node => Math.max(validDate(node.dateAdded), validDate(node.dateLastUsed));
 export const matches = (entry, node) => entry?.fingerprint === node.fingerprint;

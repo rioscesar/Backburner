@@ -152,6 +152,40 @@ test('Review more shows the existing empty state and preserves completion on sav
   assert.equal(h.elements.get('review').hidden,false);assert.equal(h.read().session.queue.length,1);
 });
 
+test('review folder metadata is literal, preserves its leaf, refreshes, and is not persisted',async()=>{
+  const leaf={id:'3',parentId:'2',url:'https://example.com/context',title:'Synthetic context'};
+  const folder={id:'2',parentId:'1',title:'<img src=x onerror=alert(1)>',children:[leaf]};
+  const tree=[{id:'0',children:[{id:'1',parentId:'0',title:'Bookmarks Bar',children:[folder]}]}];
+  const h=await completionHarness(tree);
+  await h.click('review-more');
+  assert.equal(h.elements.get('bookmark-folder').title,'Bookmarks Bar / <img src=x onerror=alert(1)>');
+  assert.equal(h.elements.get('folder-ancestors').textContent,'Bookmarks Bar');
+  assert.equal(h.elements.get('folder-leaf').textContent,' / <img src=x onerror=alert(1)>');
+  assert.equal(h.elements.get('folder-leaf').children.length,0);
+  assert.equal(JSON.stringify(h.read()).includes(folder.title),false);
+  const before=h.read();
+  folder.title='Renamed folder';
+  await h.evaluate("chrome.bookmarks.get=async()=>[{id:'3',parentId:'2',url:'https://example.com/context',title:'Synthetic context'}]");
+  await h.click('keep');
+  assert.deepEqual(h.read(),before);
+  assert.equal(h.elements.get('bookmark-folder').title,'Bookmarks Bar / Renamed folder');
+  assert.match(h.elements.get('notice').children[0].textContent,/folder changed/);
+  await h.click('keep');assert.equal(h.read().entries['3'].disposition,'reference');
+});
+
+test('root and unavailable folder metadata replace the previous context rather than retaining it',async()=>{
+  const leaf={id:'1',parentId:'0',url:'https://example.com/root',title:'Synthetic root'};
+  const tree=[{id:'0',children:[leaf]}],h=await completionHarness(tree);
+  await h.click('review-more');
+  assert.equal(h.elements.get('folder-leaf').textContent,'Bookmarks root');
+  assert.equal(h.elements.get('folder-ancestors').hidden,true);
+  leaf.parentId='missing';
+  await h.evaluate('renderReview()');
+  assert.equal(h.elements.get('bookmark-folder').title,'Folder unavailable');
+  assert.equal(h.elements.get('folder-leaf').textContent,'Folder unavailable');
+  assert.equal(h.elements.get('folder-ancestors').textContent,'');
+});
+
 test('reminder handoff preserves an unfinished review until explicit switch and uses the selected item',async()=>{
   const h=await completionHarness([1,2].map(id=>({id:String(id),url:`https://example.com/${id}`,title:`Synthetic ${id}`})));
   await h.evaluate('save(s=>startSession(s,nodes))');

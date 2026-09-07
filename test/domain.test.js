@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {emptyState,safeUrl,flatten,candidates,startSession,startReminderSession,eligibleAt,LATER_DELAY,markShown,decide,finish,undo,validateState} from '../domain.js';
+import {emptyState,safeUrl,flatten,folderPath,candidates,startSession,startReminderSession,eligibleAt,LATER_DELAY,markShown,decide,finish,undo,validateState} from '../domain.js';
 import {node,fp,otherFp} from './fixtures.js';
 
 test('URL controls accept web destinations and reject executable/local/credential URLs',()=>{
@@ -14,6 +14,39 @@ test('tree controls include only eligible leaves, even deeply nested',()=>{
 test('selection interleaves unknown dates, orders dated records and does not equate unknown with unused',()=>{
   const nodes=[node('1',{dateAdded:3000}),node('2',{dateAdded:undefined}),node('3',{dateAdded:1000}),node('4',{dateAdded:2000})];
   assert.deepEqual(candidates(nodes,emptyState()).map(n=>n.id),['3','2','4','1']);
+});
+test('folder context follows native ancestry without including the invisible root or mutating data',()=>{
+  const leaf=node('4',{parentId:'3'});
+  const tree=[{id:'0',title:'Invisible root',children:[
+    {id:'1',parentId:'0',title:'Bookmarks Bar',children:[
+      {id:'2',parentId:'1',title:'Work',children:[{id:'3',parentId:'2',title:'Kubernetes',children:[leaf]}]},
+      node('6',{parentId:'1'})
+    ]},node('5',{parentId:'0'})
+  ]}];
+  const before=structuredClone(tree);
+  assert.deepEqual(folderPath(tree,'4'),['Bookmarks Bar','Work','Kubernetes']);
+  assert.deepEqual(folderPath(tree,'5'),['Bookmarks root']);
+  assert.deepEqual(folderPath(tree,'6'),['Bookmarks Bar']);
+  assert.deepEqual(tree,before);
+  tree[0].children[0].title='Localized folder';
+  assert.equal(folderPath(tree,'4')[0],'Localized folder');
+});
+test('folder context reports missing/stale parents and cycles without inventing a complete path',()=>{
+  const leaf=node('4',{parentId:'3'}), folder={id:'3',parentId:'missing',title:'Kubernetes',children:[leaf]};
+  assert.deepEqual(folderPath([folder],'4'),['Folder unavailable','Kubernetes']);
+  assert.deepEqual(folderPath([leaf],'4'),['Folder unavailable']);
+  assert.deepEqual(folderPath([folder],'missing'),['Folder unavailable']);
+  folder.parentId='3';
+  assert.deepEqual(folderPath([folder],'4'),['Folder unavailable','Kubernetes']);
+  folder.children.push(folder);
+  assert.deepEqual(folderPath([folder],'4'),['Folder unavailable','Kubernetes']);
+  assert.deepEqual(folderPath([node('3'),leaf],'4'),['Folder unavailable']);
+});
+test('folder context supports untitled folders and deep ancestry without recursion',()=>{
+  let child=node('2001',{parentId:'2000'});
+  for(let i=2000;i>0;i--)child={id:String(i),parentId:String(i-1),title:i===2000?'':`Folder ${i}`,children:[child]};
+  const path=folderPath([{id:'0',children:[child]}],'2001');
+  assert.equal(path.length,2000);assert.equal(path[0],'Folder 1');assert.equal(path.at(-1),'Unnamed folder');
 });
 test('all decisions preserve input nodes; suppression, undo, and changed URL fingerprint controls',()=>{
   for(const disposition of ['reference','dismissed','later']) {

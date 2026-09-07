@@ -1,4 +1,4 @@
-import { flatten, candidates, activityDate, safeUrl, matches, eligibleAt, startSession, startReminderSession, markShown, decide, finish, undo, DEFAULT_BATCH_SIZE } from './domain.js';
+import { flatten, folderPath, candidates, activityDate, safeUrl, matches, eligibleAt, startSession, startReminderSession, markShown, decide, finish, undo, DEFAULT_BATCH_SIZE } from './domain.js';
 import { createStore, fingerprintUrl } from './store.js';
 import { createRemoval } from './removal.js';
 
@@ -7,6 +7,7 @@ const store = createStore(chrome.storage.local);
 const removal=createRemoval({bookmarks:chrome.bookmarks,read:()=>state,write:save});
 let state, nodes = [], current, busy = false, screen = 'loading', returnScreen = 'home', decisionLimit = 30;
 let reminderTarget=null, reminderRequested=false;
+let bookmarkTree=[], currentFolder=[];
 const sections = ['loading','welcome','home','review','summary','decisions','help','locked','fatal'];
 
 function show(name) {
@@ -32,13 +33,13 @@ async function run(action) {
 }
 async function save(transform) { state = await store.update(transform); }
 async function refreshNodes() {
-  const bookmarks = flatten(await chrome.bookmarks.getTree());
+  const tree=await chrome.bookmarks.getTree(), bookmarks=flatten(tree);
   // Batch hashing avoids thousands of simultaneous crypto tasks on large trees.
   const result=[];
   for(let i=0; i<bookmarks.length; i+=100) {
     result.push(...await Promise.all(bookmarks.slice(i,i+100).map(async n => ({...n, fingerprint:await fingerprintUrl(n.url)}))));
   }
-  nodes=result;
+  nodes=result;bookmarkTree=tree;
 }
 function dateLabel(value) { return new Intl.DateTimeFormat(undefined,{month:'short',year:'numeric'}).format(value); }
 
@@ -75,6 +76,11 @@ async function renderReview() {
   $('saved-date').textContent=activityDate(current) ? `Recorded ${dateLabel(activityDate(current))}` : 'Date unknown';
   $('bookmark-title').textContent=current.title || url.hostname;
   $('bookmark-url').textContent=current.url;
+  currentFolder=folderPath(bookmarkTree,current.id);
+  $('bookmark-folder').title=currentFolder.join(' / ');
+  $('folder-ancestors').hidden=currentFolder.length<2;
+  $('folder-ancestors').textContent=currentFolder.slice(0,-1).join(' / ');
+  $('folder-leaf').textContent=(currentFolder.length>1?' / ':'')+currentFolder.at(-1);
   $('selection-reason').textContent=current.dateLastUsed ? 'Older recorded bookmark activity · not full browsing history' : current.dateAdded ? 'Selected from earlier saves · last use unknown' : 'No date recorded · not necessarily unused';
   const entry=state.entries[current.id];
   $('deferrals').textContent=matches(entry,current) && entry.deferrals>0 ? `You’ve chosen Later ${entry.deferrals} ${entry.deferrals===1?'time':'times'}. No rush.` : '';
@@ -129,7 +135,10 @@ async function revalidate() {
     if(available.some(n=>n.id===current.id)) throw new Error('Bookmark could not be checked.');
   }
   if(!node || !safeUrl(node.url)) {await renderReview();message('This bookmark is no longer available. Nothing was opened or decided.');return false;}
-  if(node.url!==current.url || node.title!==current.title) {await renderReview();message('This bookmark changed in Chrome. Review the updated details before deciding.');return false;}
+  const latestFolder=folderPath(await chrome.bookmarks.getTree(),node.id);
+  if(node.url!==current.url || node.title!==current.title || node.parentId!==current.parentId || JSON.stringify(latestFolder)!==JSON.stringify(currentFolder)) {
+    await renderReview();message('This bookmark or its folder changed in Chrome. Review the updated details before deciding.');return false;
+  }
   return true;
 }
 

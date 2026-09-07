@@ -1,6 +1,15 @@
-# Release verification — 0.1.3
+# Release verification — 0.1.4
 
 Use synthetic bookmarks in a clean profile. No account needed.
+
+Verify current folder context below the review URL using nested native folders.
+Check direct root leaves, untitled/missing/cyclic ancestry with controlled fixtures,
+and native rename/move followed by action revalidation/reload. A changed context
+must be shown before accepting the action. At desktop and narrow widths, long
+ancestry must ellipsize before the leaf; long leaf names must wrap without
+horizontal overflow. Full text stays in the DOM/tooltip, with no links or controls.
+Hostile folder names render literally. Confirm no new path persistence, permission,
+notification content, selection or recovery behavior.
 
 Run npm run package and npm test; load dist/unpacked, the exact extracted ZIP, and record its SHA256 and Chrome version.
 
