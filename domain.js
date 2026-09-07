@@ -1,8 +1,8 @@
 // Set only after observed founder calibration. A null default is a preview gate.
 export const DEFAULT_BATCH_SIZE = null;
 export const DISPOSITIONS = ['reference', 'dismissed', 'later'];
-export const emptyState = () => ({ version: 1, onboarded: false, batchSize: DEFAULT_BATCH_SIZE,
-  entries: {}, session: null, lastSession: null, totals: { shown: 0, opened: 0, reference: 0, dismissed: 0, later: 0, sessions: 0 } });
+export const emptyState = () => ({ version: 2, onboarded: false, batchSize: DEFAULT_BATCH_SIZE,
+  entries: {}, recovery: {}, session: null, lastSession: null, totals: { shown: 0, opened: 0, reference: 0, dismissed: 0, later: 0, removed: 0, sessions: 0 } });
 
 export function safeUrl(value) {
   try {
@@ -49,7 +49,7 @@ export function startSession(state, nodes, now = Date.now()) {
   const selected = candidates(nodes, state).slice(0, state.batchSize ?? nodes.length);
   if (!selected.length) return next;
   next.session = { started: now, queue: selected.map(n => ({ id:n.id, fingerprint:n.fingerprint })),
-    cursor: 0, reviewed: 0, opened: 0, shown: [], counts: {reference:0, dismissed:0, later:0}, calibration: state.batchSize === null };
+    cursor: 0, reviewed: 0, opened: 0, shown: [], counts: {reference:0, dismissed:0, later:0, removed:0}, calibration: state.batchSize === null };
   return next;
 }
 
@@ -77,7 +77,7 @@ export function finish(state, now = Date.now()) {
   if (!session) return next;
   if (session.calibration && session.reviewed > 0) next.batchSize = session.reviewed;
   next.lastSession = { started:session.started, ended:now, reviewed:session.reviewed, opened:session.opened,
-    counts:session.counts, feeling:null, meaningful:null };
+    counts:session.counts };
   next.totals.sessions++; next.session = null;
   return next;
 }
@@ -88,26 +88,42 @@ export function undo(state, id) {
   return next;
 }
 
-export function validateState(state) {
+export function validateState(state, legacy = false) {
   const integer = n => Number.isSafeInteger(n) && n >= 0;
   const fingerprint = f => typeof f === 'string' && /^[a-f0-9]{64}$/.test(f);
-  if (!state || state.version !== 1 || typeof state.onboarded !== 'boolean' ||
+  if (!state || state.version !== (legacy ? 1 : 2) || typeof state.onboarded !== 'boolean' ||
       !(state.batchSize === null || (integer(state.batchSize) && state.batchSize > 0)) ||
       !state.entries || Array.isArray(state.entries) || typeof state.entries !== 'object') throw new Error('Saved data is not compatible. Nothing has been changed.');
   for (const [id, e] of Object.entries(state.entries)) {
     if (!/^\d+$/.test(id) || !e || !fingerprint(e.fingerprint) || !DISPOSITIONS.includes(e.disposition) || !integer(e.deferrals) || !integer(e.at)) throw new Error('Saved decisions could not be read. Nothing has been changed.');
   }
-  for (const key of Object.keys(emptyState().totals)) if (!integer(state.totals?.[key])) throw new Error('Saved counts could not be read.');
+  for (const key of Object.keys(emptyState().totals).filter(k=>!legacy || k!=='removed')) if (!integer(state.totals?.[key])) throw new Error('Saved counts could not be read.');
   if (state.session) {
     const s = state.session;
     if (!Array.isArray(s.queue) || !integer(s.cursor) || s.cursor > s.queue.length || !integer(s.started) || !integer(s.reviewed) || !integer(s.opened) || typeof s.calibration !== 'boolean' || !Array.isArray(s.shown) || s.shown.some(id => typeof id !== 'string') ||
       s.queue.some(n => !/^\d+$/.test(n.id) || !fingerprint(n.fingerprint)) || new Set(s.queue.map(n=>n.id)).size !== s.queue.length ||
-      DISPOSITIONS.some(d => !integer(s.counts?.[d]))) throw new Error('Saved session could not be read. Nothing has been changed.');
+      [...DISPOSITIONS,...(legacy?[]:['removed'])].some(d => !integer(s.counts?.[d]))) throw new Error('Saved session could not be read. Nothing has been changed.');
   }
   if (state.lastSession) {
     const s = state.lastSession;
-    if (![s.started,s.ended,s.reviewed,s.opened].every(integer) || DISPOSITIONS.some(d => !integer(s.counts?.[d])) ||
-      ![null,'useful','neutral','chore'].includes(s.feeling) || ![null,true,false].includes(s.meaningful)) throw new Error('Saved summary could not be read.');
+    if (![s.started,s.ended,s.reviewed,s.opened].every(integer) || [...DISPOSITIONS,...(legacy?[]:['removed'])].some(d => !integer(s.counts?.[d])) ||
+      (legacy && (![null,'useful','neutral','chore'].includes(s.feeling) || ![null,true,false].includes(s.meaningful)))) throw new Error('Saved summary could not be read.');
+  }
+  if(!legacy) {
+    if(!state.recovery || typeof state.recovery!=='object' || Array.isArray(state.recovery))throw new Error('Recovery data could not be read.');
+    for(const [key,r]of Object.entries(state.recovery)) {
+      if(!/^[a-f0-9-]{36}$/.test(key) || !r || !/^\d+$/.test(r.id) || !/^\d+$/.test(r.parentId) || !integer(r.index) || typeof r.title!=='string' || !safeUrl(r.url) || !fingerprint(r.fingerprint) || !integer(r.at) || !['prepared','removed','restoring'].includes(r.status) || typeof r.counted!=='boolean')throw new Error('Recovery copy could not be read. Nothing has been discarded.');
+      if(r.status==='restoring' && (!/^\d+$/.test(r.restoreParent) || !Array.isArray(r.beforeIds) || r.beforeIds.some(id=>!/^\d+$/.test(id))))throw new Error('Pending restore could not be read.');
+    }
   }
   return state;
+}
+
+export function migrateState(value) {
+  if(value.version!==1)return validateState(value);
+  validateState(value,true);
+  const next=structuredClone(value);next.version=2;next.recovery={};next.totals.removed=0;
+  if(next.session)next.session.counts.removed=0;
+  if(next.lastSession) {next.lastSession.counts.removed=0;delete next.lastSession.feeling;delete next.lastSession.meaningful;}
+  return validateState(next);
 }

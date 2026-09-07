@@ -1,4 +1,4 @@
-import { emptyState, validateState } from './domain.js';
+import { emptyState, validateState, migrateState } from './domain.js';
 export const STATE_KEY = 'backburner.v1';
 
 // The review page holds an exclusive Web Lock for its lifetime. Only one writer.
@@ -8,7 +8,10 @@ export function createStore(storage) {
   return {
     async load() {
       const result = await storage.get(STATE_KEY);
-      current = validateState(result[STATE_KEY] ?? emptyState());
+      const original=result[STATE_KEY] ?? emptyState();
+      const migrated=migrateState(original);
+      if(original.version!==migrated.version)await storage.set({[STATE_KEY]:migrated});
+      current = migrated;
       return structuredClone(current);
     },
     update(transform) {

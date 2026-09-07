@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {existsSync,readFileSync} from 'node:fs';
-const required=['manifest.json','background.js','review.html','review.css','review.js','domain.js','store.js','icons/icon16.png','icons/icon32.png','icons/icon48.png','icons/icon128.png'].sort();
+const required=['manifest.json','background.js','review.html','review.css','review.js','domain.js','store.js','removal.js','icons/icon16.png','icons/icon32.png','icons/icon48.png','icons/icon128.png'].sort();
 function check(names){return JSON.stringify([...names].sort())===JSON.stringify(required);}
 function namesFromZip(buffer) {
   const names=[];

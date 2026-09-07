@@ -1,34 +1,32 @@
 # Backburner privacy policy
 
-Effective date: September 6, 2026. Applies to Backburner version 0.1.0.
+Applies to version 0.1.1. Maintained through [rioscesar/Backburner](https://github.com/rioscesar/Backburner).
 
-Backburner helps you revisit existing Chrome bookmarks and decide which ones should receive your attention. It is maintained through the public [rioscesar/Backburner repository](https://github.com/rioscesar/Backburner).
+## What stays on your device
 
-## Information processed on your device
+Backburner reads Chrome bookmark IDs, titles, URLs, hierarchy and available dates to show suggestions and check the current bookmark before an action. It stores local decisions, URL fingerprints, deferral counts, current session, latest factual session summary and aggregate action counts. It does not collect completion survey responses. Updating from 0.1.0 removes obsolete survey fields while preserving other valid local state.
 
-Backburner reads your Chrome bookmark tree, including bookmark IDs, titles, URLs, and available date metadata, to show review suggestions. Titles and URLs are displayed in the extension and are not copied into its saved decision records.
+For each confirmed removal, Backburner first stores a **recovery copy with the bookmark title, URL, original location and identity, and operation status**. Pending restoration also records identifiers used to check whether creation already occurred. These copies are not anonymized. Ordinary decision records use URL fingerprints rather than copying titles and URLs.
 
-The extension stores bookmark IDs, SHA-256 URL fingerprints used to recognize a changed destination, decisions, deferral counts, session state, aggregate action counts, and optional session feedback in Chrome extension local storage. Fingerprints are identifiers, not anonymization. Session records include timestamps and counts; they do not establish that a page was read. Only the latest session summary is retained, alongside aggregate totals and current per-bookmark decisions. Obsolete decision records are pruned when the extension starts.
+Recovery copies remain locally until the bookmark is restored or you explicitly confirm forgetting the copy. There is no automatic expiry or silent quota-based eviction. If a backup cannot be saved, Backburner does not attempt removal. Interrupted operations can leave copies pending until you resolve them.
 
-The extension also keeps its own review tab ID in temporary session storage so the toolbar button can return you to an open review.
+## Permissions and native changes
 
-## Permissions and data use
+- **Bookmarks:** reads bookmarks, removes one bookmark only after explicit confirmation, and creates a bookmark when you explicitly restore it. No bulk, folder or automatic deletion.
+- **Storage:** saves decisions, recovery and session records locally, plus its own tab ID temporarily for returning to the review.
 
-- **Bookmarks:** required to read existing bookmarks. Although Chrome grants bookmark modification capabilities with this permission, Backburner does not create, change, move, or delete your bookmarks.
-- **Storage:** required to remember local decisions and sessions.
+No browser-history permission, broad website access, content scanning, application backend, remote code, analytics service or account. Selecting Keep, Later or Stop suggesting does not modify native bookmarks. Selecting Remove does. Chrome may sync native removal/restoration according to its own settings; Backburner's local recovery copies do not sync.
 
-Backburner does not request browser-history access, broad website access, or content-script access. It does not scan page contents, send analytics, execute remotely hosted code, or connect to an application backend. No account is required.
+## Sharing
 
-## Sharing and external websites
+Backburner does not transmit bookmark data, recovery content or decision records to its maintainer or other parties. It does not sell data or use it for advertising. Opening a bookmark visits that site normally; its practices apply. Privacy/support links open GitHub, whose privacy practices apply. Information you choose to put in a support issue is public. Never include personal bookmarks, recovery copies or storage dumps.
 
-Backburner does not transmit bookmark or decision data to its maintainer or any third party. It does not sell data or use it for advertising. When you choose to open a bookmark, Chrome navigates to that website normally, and that site’s data practices apply. Chrome may independently sync your native bookmarks according to your Chrome settings; Backburner’s decisions do not use Chrome sync storage.
+## Your controls and recovery limits
 
-Privacy and support links open GitHub. GitHub’s own privacy policy applies there. If you submit a support issue, information you choose to include is public and hosted by GitHub. Do not include personal bookmark URLs, browsing data, or other sensitive information.
+Review decisions lets you undo suppression, restore removed bookmarks, or explicitly forget a recovery copy. Restore creates a new native bookmark; original IDs and dates cannot be restored. If the original folder is unavailable, confirm a replacement destination. Pending/ambiguous results require inspection to avoid duplicate creation.
 
-## Your controls and retention
+**Uninstalling Backburner or clearing extension storage erases all remaining recovery copies and decisions.** Disabling the extension retains them. There is no developer-held or server-side backup. Local recovery cannot reverse every Chrome sync effect or guarantee exact original metadata. Old versions cannot safely interpret the new recovery schema; do not downgrade as a recovery method.
 
-You can undo a local decision in **Review decisions**. Disabling the extension stops it from running and retains local state; uninstalling removes extension storage and loses decisions. Your native Chrome bookmarks remain unchanged. There is no server-side copy maintained by Backburner to delete or recover.
+## Contact
 
-## Questions and changes
-
-Ask questions through [Backburner support](https://github.com/rioscesar/Backburner/issues). Changes to data handling will be reflected in this policy and the extension’s disclosures. This policy describes this version’s behavior; it is not a claim about third-party websites or Chrome’s independent services.
+Use [Backburner support](https://github.com/rioscesar/Backburner/issues) for non-sensitive questions. Policy and in-product disclosures will be updated if handling changes.

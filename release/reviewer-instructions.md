@@ -1,33 +1,13 @@
-# Release verification and store reviewer instructions
+# Release verification — 0.1.1
 
-No account or credentials are required. Use synthetic bookmarks, never a personal dataset for debugging or screenshots.
+Use synthetic bookmarks in a clean profile. No account needed.
 
-## Core journey
+Run npm run package and npm test; load dist/unpacked, the exact extracted ZIP, and record its SHA256 and Chrome version.
 
-1. Save several HTTP(S) pages as Chrome bookmarks.
-2. Install the extension and open Backburner from its toolbar action.
-3. Read the first-run explanation; begin a review.
-4. Open a bookmark. Return to the review and choose Keep as reference.
-5. Choose Later on the next item and Stop suggesting on another.
-6. Finish the session. Inspect the optional reflection and completion state.
-7. Open Review decisions; undo a decision. Start another session.
-8. Verify the original Chrome bookmarks are intact.
+Verify first run, Open, Keep, Later, secondary Stop suggesting and Undo. These must not modify Chrome. Verify Remove presents title/URL/folder and sync/recovery limitations, focuses Cancel, and cancels without mutation. Confirm removal of one leaf; unrelated and same-URL siblings remain. Verify factual completion with no survey.
 
-The current developer preview calibrates session length from the number reviewed in the first finished session. Public release requires an observed founder-derived default and a subsequent first-use check; do not submit this calibration candidate as if that gate passed.
+Restart Chrome and restore from Removed bookmarks. Verify new native ID, destination/position and cleared recovery copy. Missing/unwritable parent must require an explicit destination. Forget-copy cancellation must retain the copy; confirmed forgetting must remove only the local backup. Uninstall loss must be clear in UI and policy.
 
-## Required engineering checks
+Inject failure before backup save (no remove), on native remove (copy retained), after remove before final save (pending record survives), on create (pending restore), and after create before final save (inspect candidate before retry; no blind duplicates). Test double clicks, stale/managed/folder rejection, corrupt data, v1 migration without survey fields, reload, exclusive tab writer, empty states, literal hostile titles and narrow keyboard-accessible UI. Never treat simulated events as proof of actual multi-device sync behavior.
 
-Run `npm run package` and `npm test`. Load `dist/unpacked`, extracted from the exact ZIP, into a clean Chrome profile. Record package SHA-256 and runtime version. Verify reload and browser restart, duplicate tabs, finite completion, empty and all-reviewed states, changed/deleted bookmarks, unsupported URL handling, literal rendering of malicious-looking titles, and keyboard/narrow-window usability. Inject storage failure only in a synthetic test context; confirm no decision advances and retry works.
-
-Inspect network activity: no extension telemetry or content fetches. User-triggered navigation is expected. Check archive inventory and manifest permissions. No private data in screenshots, package, repository, or logs.
-
-## Public launch gates
-
-- Founder observed value and comfortable session size recorded.
-- A non-builder can explain choices, start, finish and undo without coaching.
-- Live policy/support links checked; disclosures match actual behavior.
-- Publisher account and listing fields complete.
-- Submit only the tested package. Store approval timing is external.
-- Public install link verified after approval before sharing “try it here.”
-
-Publication readiness, submission, approval and longer-term usefulness are different outcomes. Do not mark one complete based on another.
+Before public launch, complete founder session calibration and non-builder walkthrough. Finalize policy/support, publisher declarations and store fields. Submit only tested package after owner review; don't infer store approval or usefulness from unit tests. No downgrade/uninstall as an operation-recovery strategy.

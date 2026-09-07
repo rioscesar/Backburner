@@ -1,24 +1,26 @@
 import { flatten, candidates, activityDate, safeUrl, matches, startSession, markShown, decide, finish, undo, DEFAULT_BATCH_SIZE } from './domain.js';
 import { createStore, fingerprintUrl } from './store.js';
+import { createRemoval } from './removal.js';
 
 const $ = id => document.getElementById(id);
 const store = createStore(chrome.storage.local);
+const removal=createRemoval({bookmarks:chrome.bookmarks,read:()=>state,write:save});
 let state, nodes = [], current, busy = false, screen = 'loading', returnScreen = 'home', decisionLimit = 30;
 const sections = ['loading','welcome','home','review','summary','decisions','help','locked','fatal'];
 
 function show(name) {
   sections.forEach(id => { $(id).hidden = id !== name; }); screen = name;
 }
-function message(text, retry) {
+function message(text, retry, label='Retry') {
   $('notice').replaceChildren(document.createTextNode(text));
-  if (retry) { const button = document.createElement('button'); button.textContent='Retry'; button.addEventListener('click',retry); $('notice').append(button); }
+  if (retry) { const button = document.createElement('button'); button.textContent=label; button.addEventListener('click',retry); $('notice').append(button); }
 }
 function clearMessage() { $('notice').replaceChildren(); }
 async function run(action) {
   if (busy) return;
   busy = true; document.querySelectorAll('button').forEach(b => {b.disabled=true;});
   try { await action(); }
-  catch { message('That didn’t finish. Your Chrome bookmarks are unchanged. Try again; if saving keeps failing, reload or contact support.',()=>location.reload()); }
+  catch { message('That didn’t finish. If you were removing or restoring, check Removed bookmarks in Review decisions before retrying. Recovery copies are kept; do not uninstall to troubleshoot.',()=>run(renderDecisions),'Check recovery'); }
   finally { busy=false; document.querySelectorAll('button').forEach(b => {b.disabled=false;}); }
 }
 async function save(transform) { state = await store.update(transform); }
@@ -74,20 +76,19 @@ function renderHome() {
 
 function renderSummary() {
   show('summary'); const report=state.lastSession;
-  $('summary-copy').textContent=report ? `${report.reviewed} ${report.reviewed===1?'bookmark':'bookmarks'} considered. Your Chrome bookmarks are right where you left them.` : 'You can come back whenever you like.';
+  $('summary-copy').textContent=report ? `${report.reviewed} ${report.reviewed===1?'bookmark':'bookmarks'} considered. Removed bookmarks have local recovery copies in Review decisions.` : 'You can come back whenever you like.';
   $('summary-counts').replaceChildren();
-  for(const [key,label] of [['reference','Kept as reference'],['dismissed','Stopped suggesting'],['later','Left for later']]) {
+  for(const [key,label] of [['reference','Kept as reference'],['removed','Removed'],['later','Left for later'],['dismissed','Stopped suggesting']]) {
     const block=document.createElement('div'), count=document.createElement('strong'), caption=document.createElement('span');
     count.textContent=report?.counts[key] ?? 0; caption.textContent=label;block.append(count,caption);$('summary-counts').append(block);
   }
-  document.querySelectorAll('[data-feeling]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.feeling===report?.feeling)));
-  document.querySelectorAll('[data-meaningful]').forEach(b=>b.setAttribute('aria-pressed',String(report?.meaningful=== (b.dataset.meaningful==='true'))));
 }
 
 async function renderDecisions() {
   await refreshNodes();show('decisions');$('decisions-list').replaceChildren();
+  renderRecovery();
   const rows=nodes.filter(n=>matches(state.entries[n.id],n)).sort((a,b)=>state.entries[b.id].at-state.entries[a.id].at);
-  $('decisions-empty').hidden=rows.length>0; $('more-decisions').hidden=rows.length<=decisionLimit;
+  $('decisions-empty').hidden=rows.length>0 || Object.keys(state.recovery).length>0; $('more-decisions').hidden=rows.length<=decisionLimit;
   for(const node of rows.slice(0,decisionLimit)) {
     const entry=state.entries[node.id], row=document.createElement('article'), copy=document.createElement('div'), title=document.createElement('h2'), caption=document.createElement('p'), button=document.createElement('button');
     row.className='decision-row'; title.textContent=node.title || new URL(node.url).hostname;
@@ -146,8 +147,6 @@ $('help-nav').addEventListener('click',()=>{returnScreen=screen;show('help');});
 $('decisions-back').addEventListener('click',()=>run(returnToReview));
 $('help-back').addEventListener('click',()=>run(async()=>{if(!state)return show('fatal');await returnToReview();}));
 $('more-decisions').addEventListener('click',()=>run(async()=>{decisionLimit+=30;await renderDecisions();}));
-document.querySelectorAll('[data-feeling]').forEach(b=>b.addEventListener('click',()=>run(async()=>{await save(s=>{s.lastSession.feeling=b.dataset.feeling;return s;});renderSummary();})));
-document.querySelectorAll('[data-meaningful]').forEach(b=>b.addEventListener('click',()=>run(async()=>{await save(s=>{s.lastSession.meaningful=b.dataset.meaningful==='true';return s;});renderSummary();})));
 $('reload-locked').addEventListener('click',()=>location.reload());$('reload-fatal').addEventListener('click',()=>location.reload());
 
 // The lock spans tabs as well as reloads; a second tab cannot race storage writes.
@@ -160,6 +159,7 @@ navigator.locks.request('backburner-review-writer',{ifAvailable:true},async lock
       if(sender.id===chrome.runtime.id && request.type==='review-alive')respond({tabId:tab.id});
     });
     state=await store.load();
+    if(Object.keys(state.recovery).length)message('Recovery copies are available in Review decisions. Check any pending operation before removing another bookmark.');
     await refreshNodes();
     // Remove only obsolete extension records, never native bookmarks.
     const valid = new Map(nodes.map(n=>[n.id,n]));
@@ -171,3 +171,62 @@ navigator.locks.request('backburner-review-writer',{ifAvailable:true},async lock
   } catch { show('fatal'); }
   await new Promise(()=>{});
 }).catch(()=>show('fatal'));
+
+function confirmAction(title, detail, action, folders=[], preferred) {
+  const dialog=$('confirm-dialog');$('confirm-title').textContent=title;$('confirm-detail').textContent=detail;$('confirm-yes').textContent=action;
+  const select=$('restore-folder');select.replaceChildren();$('restore-folder-label').hidden=!folders.length;
+  for(const folder of folders){const option=document.createElement('option');option.value=folder.id;option.textContent=folder.title || 'Unnamed folder';select.append(option);}
+  if(preferred && folders.some(f=>f.id===preferred))select.value=preferred;
+  dialog.querySelectorAll('button').forEach(b=>{b.disabled=false;});
+  dialog.returnValue='cancel';dialog.showModal();$('confirm-cancel').focus();
+  return new Promise(resolve=>dialog.addEventListener('close',()=>resolve({accepted:dialog.returnValue==='confirm',parentId:select.value}),{once:true}));
+}
+
+$('remove').addEventListener('click',()=>run(async()=>{
+  clearMessage();if(!await revalidate())return;
+  if(current.unmodifiable){message('This bookmark is managed and cannot be removed.');return;}
+  const [parent]=await chrome.bookmarks.get(current.parentId);
+  const expected=structuredClone(current);
+  const answer=await confirmAction('Remove this Chrome bookmark?',`${expected.title}\n${expected.url}\nFolder: ${parent.title || 'Unnamed folder'}\n\nChrome may sync removal to other devices. Backburner saves a local title and URL recovery copy. Uninstalling removes that copy. Restoring creates a new bookmark; original dates are not recovered.`,'Remove bookmark');
+  if(!answer.accepted)return;
+  const key=await removal.remove(expected,true);
+  await renderReview();message('Bookmark removed. A recovery copy is saved on this device.',()=>run(()=>restoreRecovery(key)),'Undo removal');
+}));
+
+async function restoreRecovery(key) {
+  const record=state.recovery[key];if(!record){message('This recovery copy has already been resolved.');return;}
+  const info=await removal.inspect(key);
+  if(info.original){message('The original bookmark still exists. No duplicate was created. You can keep or explicitly forget this recovery copy.');return;}
+  if(record.status==='restoring') {
+    if(info.matches.length) {
+      const answer=await confirmAction('A bookmark may already be restored',`${record.title}\n${record.url}\n\nA matching bookmark exists in the restore destination. Confirm it is the restored copy to finish recovery without creating another. If unsure, cancel and inspect Chrome bookmarks.`,'Confirm already restored',info.matches.map(n=>({id:n.id,title:n.title})),info.matches[0].id);
+      if(answer.accepted)await removal.resolveRestore(key,answer.parentId,true);
+    } else {
+      const answer=await confirmAction('Previous restore is uncertain','No new matching bookmark was found. Allow a new restore attempt? This step does not create a bookmark.','Allow another attempt');
+      if(answer.accepted)await removal.resolveRestore(key,null,true);
+    }
+    await renderDecisions();return;
+  }
+  if(!info.folders.length){message('No writable destination is available. Your recovery copy is kept.');return;}
+  const answer=await confirmAction('Restore bookmark',`${record.title}\n${record.url}\n\n${info.parent?'The original folder is selected.':'The original folder is unavailable. Choose a destination.'} Restore creates a new bookmark with new dates. Chrome may sync it. Confirm the destination below.`,'Restore bookmark',info.folders,info.parent?.id);
+  if(!answer.accepted)return;
+  await removal.restore(key,answer.parentId,true);await renderDecisions();message('Bookmark restored. Its recovery copy has been cleared.');
+}
+
+function renderRecovery() {
+  const list=$('recovery-list');list.replaceChildren();
+  const records=Object.entries(state.recovery).sort((a,b)=>b[1].at-a[1].at);
+  $('recovery-empty').hidden=records.length>0;
+  for(const [key,r]of records) {
+    const row=document.createElement('article');row.className='decision-row';
+    const copy=document.createElement('div'),title=document.createElement('h3'),detail=document.createElement('p');
+    title.textContent=r.title || r.url;detail.textContent=`${r.url} · ${r.status==='removed'?'Removed — recovery copy saved':r.status==='restoring'?'Restore uncertain — check before retrying':'Removal unconfirmed — inspect before retrying'}`;
+    copy.append(title,detail);
+    const actions=document.createElement('div');actions.className='recovery-actions';
+    const restore=document.createElement('button');restore.className='open-button';restore.textContent=r.status==='restoring'?'Check restore':'Restore';restore.addEventListener('click',()=>run(()=>restoreRecovery(key)));
+    const forget=document.createElement('button');forget.className='text-button';forget.textContent='Forget recovery copy';forget.addEventListener('click',()=>run(async()=>{
+      const answer=await confirmAction('Forget this recovery copy?',`${r.title}\n${r.url}\n\nThis permanently erases Backburner’s local recovery copy. It does not change Chrome bookmarks. If the bookmark is removed, Backburner will no longer be able to restore it.`,'Forget recovery copy');
+      if(answer.accepted){await removal.forget(key,true);await renderDecisions();message('Recovery copy forgotten. No Chrome bookmark was changed.');}
+    }));actions.append(restore,forget);row.append(copy,actions);list.append(row);
+  }
+}

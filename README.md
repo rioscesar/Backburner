@@ -1,55 +1,55 @@
 # Backburner
 
-**A fresh look at the bookmarks you meant to come back to.**
+**Revisit the bookmarks you meant to come back to. Keep what matters. Resolve what no longer does.**
 
-Backburner brings existing Chrome bookmarks into a small review. Open something that catches your eye, keep it as a reference, leave it for later, or stop suggesting it. Your Chrome bookmarks stay intact. Every decision is reversible.
+Backburner brings existing Chrome bookmarks into a small review. Open something interesting, keep it as a reference, defer it, or remove the bookmark after confirmation.
 
 ![Backburner review](release/screenshot-review.png)
 
-## Status: developer preview
+## Status: developer preview 0.1.1
 
-This is a working extension candidate, not a Chrome Web Store release. Public launch is pending founder calibration, a newcomer usability walkthrough, and store submission/review. The initial preview learns session size when you finish your first review. That calibration flow is not yet the final public first-run experience.
+This is a working extension candidate, not a Chrome Web Store release. Public launch still needs founder session-size calibration, a newcomer walkthrough, and store submission/review. The first preview session learns its size when you finish; that is not yet the final public default.
 
-## Try the preview locally
+## Try locally
 
-1. Download this implementation branch or clone the repository and check out `experiment/first-review`.
-2. In Chrome, open `chrome://extensions` and turn on **Developer mode**.
-3. Choose **Load unpacked** and select this repository folder (the one containing `manifest.json`).
-4. Open **Backburner** from Chrome’s Extensions menu. Pin it if you want it within reach.
+1. Download or clone the implementation branch `experiment/first-review`.
+2. Open `chrome://extensions` in Chrome and enable **Developer mode**.
+3. Choose **Load unpacked** and select the folder containing `manifest.json`.
+4. Open Backburner from the Extensions menu; pin it if useful.
 
-For the release package, run `npm run package` on Windows and load `dist/unpacked`. This contains exactly the runtime files from `dist/backburner.zip`. The ZIP is a store-upload artifact; it is not a one-click consumer installation.
+On Windows, `npm run package` creates `dist/backburner.zip` and extracts its exact runtime contents to `dist/unpacked`. Load the latter to test the package. A ZIP is a store upload artifact, not a one-click consumer install.
 
-## A small review, without reorganizing everything
+## Actions
 
-- **Open bookmark** visits the page in a new tab. Your review waits here.
-- **Keep as reference** means it’s useful and doesn’t need another suggestion.
-- **Stop suggesting** removes it from Backburner’s future reviews, keeping the Chrome bookmark.
-- **Later** makes it eligible in a future session, behind bookmarks you haven’t reviewed.
-- **Review decisions → Undo** puts a bookmark back in consideration.
+- **Open bookmark:** visit the page in another tab; the review waits here.
+- **Keep as reference:** leave the bookmark in Chrome and stop asking about it.
+- **Later:** leave it in Chrome and reconsider it in a future session.
+- **Remove bookmark:** confirm one native bookmark's removal. Chrome may sync the change to other devices.
+- **Stop suggesting instead:** a secondary action that retains the Chrome bookmark.
 
-Finish early whenever you like. An unfinished session resumes after a reload or browser restart. There are no reminders, streaks, folders to build, or tags to maintain.
+The completion screen reports factual action counts. It asks no survey questions and adds no feedback collection or adaptive behavior.
 
-Selection starts with older recorded bookmark activity, mixing in items with unknown dates. This is a transparent starting point, not a judgment about your interests. Bookmark dates are incomplete clues. Backburner does not read browser history or know whether you read a page.
+## Recovery has limits
 
-## Privacy
+Before removal, Backburner saves a local recovery copy containing the title, URL and original location. If that save fails, removal is not attempted. Use **Undo removal**, or **Review decisions → Removed bookmarks → Restore** after closing or restarting Chrome.
 
-No account, server, AI service, content scanning, or telemetry. The bookmarks permission is used to read your existing bookmarks; the extension does not modify them. Storage keeps local decisions and session summaries. Uninstalling removes this local state. Chrome’s own bookmark sync is separate.
+Restore creates a new bookmark. Original IDs and dates are not recovered; position is restored where possible. If the original folder is unavailable, confirm another destination. Copies remain until restored or explicitly forgotten. **Uninstalling Backburner or clearing extension storage destroys recovery copies.** Disabling retains them. Chrome sync is independent; Backburner cannot reverse all cross-device effects.
 
-Read the [privacy policy](PRIVACY.md) and [support information](SUPPORT.md). Opening a bookmark or support link visits that website normally.
+Interrupted operations remain visible for inspection. A possible completed restoration requires confirmation before another copy is created. Do not repeatedly retry, downgrade, or uninstall to fix an uncertain operation. See [support](SUPPORT.md).
 
-## Development and verification
+## Local by design
 
-Node 22 or newer. No npm dependencies or build step for the extension.
+No account, backend, history access, website scanning, or telemetry. Existing `bookmarks` and `storage` permissions suffice; native writes are limited to confirmed individual removal and explicit restoration. Read the [privacy policy](PRIVACY.md).
+
+Selections use incomplete bookmark date metadata, not full browsing history or inferred interest. Non-HTTP(S) and credential-bearing URLs are excluded. Duplicate native bookmark entries are separate. New destinations become eligible again. No tags, folders to organize, notifications or endless feed.
+
+## Development
+
+Node 22+; no npm dependencies. On Windows:
 
 ```powershell
 npm run package
 npm test
 ```
 
-The package allowlist excludes tests, documentation, and development files. Tests cover selection, decision recovery, persistence failure, URL handling, permissions, safe rendering patterns, and ZIP contents, with positive and negative controls. CI runs the same commands on Windows.
-
-Browser integration is separately exercised in an isolated Chrome for Testing profile using synthetic bookmarks. Mocked tests alone do not establish browser compatibility. Before release, validate the exact ZIP contents in Chrome and complete the usability and publication checks in [reviewer instructions](release/reviewer-instructions.md).
-
-## Limits
-
-Decisions stay on one device and do not sync. Bookmarks with non-HTTP(S) or credential-bearing URLs are excluded. Local suppression belongs to an individual bookmark, so duplicate URLs in different bookmark entries are separate. Changed destinations become eligible again. A local record reset or uninstall loses decisions but never removes your Chrome bookmarks.
+Automated tests cover migration, decision transitions, removal/recovery failure boundaries, URL safety and package contents with good/bad controls. A separate synthetic Chrome for Testing journey validates the extracted package. Public release requires real human usability and store checks, not just mocks. See [release verification](release/reviewer-instructions.md).

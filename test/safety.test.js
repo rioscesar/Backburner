@@ -4,11 +4,11 @@ import {readFileSync,readdirSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
 
-function findings(manifest, source) {
+function findings(manifest, source, recovery=false) {
   const hits=[];
   if(JSON.stringify([...(manifest.permissions??[])].sort())!==JSON.stringify(['bookmarks','storage']))hits.push('permissions');
   for(const field of ['host_permissions','optional_host_permissions','optional_permissions','content_scripts','externally_connectable','web_accessible_resources'])if(manifest[field]?.length || (manifest[field] && !Array.isArray(manifest[field])))hits.push(field);
-  if(/chrome\.bookmarks\s*\.\s*(create|update|move|remove|removeTree)\s*\(/.test(source))hits.push('bookmark mutation');
+  if(/chrome\.bookmarks\s*\.\s*(create|update|move|remove|removeTree)\s*\(/.test(source) || (!recovery && /bookmarks\.(remove|create)\(/.test(source)))hits.push('bookmark mutation');
   if(/\b(fetch|XMLHttpRequest|WebSocket|EventSource|sendBeacon)\s*\(/.test(source))hits.push('network');
   if(/\.innerHTML\s*=|\.outerHTML\s*=|insertAdjacentHTML\s*\(|\beval\s*\(/.test(source))hits.push('unsafe DOM');
   return hits;
@@ -19,7 +19,7 @@ test('safety controls catch broadened permissions, mutations, network and unsafe
   assert.ok(findings({...manifest,permissions:['bookmarks','storage','history']},'').length);
   for(const bad of ['chrome.bookmarks.remove(id)','fetch(url)','element.innerHTML = title'])assert.ok(findings(manifest,bad).length);
 });
-test('runtime source passes read-only, local-only, safe-rendering fence',()=>{
+test('review UI stays nonmutating; runtime remains local-only and safely rendered',()=>{
   const source=['background.js','review.js','store.js','domain.js'].map(f=>readFileSync(new URL(`../${f}`,import.meta.url),'utf8')).join('\n');
   assert.deepEqual(findings(manifest,source),[]);
   assert.equal(manifest.manifest_version,3);
@@ -43,4 +43,12 @@ test('tracked-source candidates contain no high-signal credentials or personal c
     const file=path.join(dir,e.name);return e.isDirectory()?visit(file):[file];
   });
   for(const file of visit(root).filter(f=>!f.endsWith('.png')))assert.equal(sensitive(readFileSync(file,'utf8')),false,path.relative(root,file));
+});
+
+test('native mutation is confined to the confirmed recovery boundary',()=>{
+ const source=readFileSync(new URL('../removal.js',import.meta.url),'utf8');
+ assert.deepEqual(findings(manifest,source,true),[]);
+ assert.ok(findings(manifest,'bookmarks.remove(id)').length);
+ assert.doesNotMatch(source,/bookmarks\.(removeTree|move|update)\(/);
+ assert.match(source,/if\(!confirmed\)/);
 });

@@ -1,47 +1,31 @@
-# Chrome Web Store listing material
+# Store listing material — 0.1.1
 
-Status: draft for version 0.1.0. Not submitted. Finish calibration and usability validation before using public-ready claims.
+Draft, not submitted. Human usability and publisher checks remain.
 
-## Name
-Backburner
+Name: Backburner
 
-## Short description
-Revisit forgotten bookmarks. Keep what matters, leave the rest behind. Your Chrome bookmarks stay intact.
+Short description: Revisit forgotten bookmarks. Keep what matters, defer the undecided, and remove what you no longer need.
 
-## Detailed description
-Saved for later doesn’t have to mean forgotten forever.
+## Description
 
-Backburner gives your existing Chrome bookmarks another moment of attention. Take a small review, open something that catches your eye, and decide what happens next:
+Saved for later doesn't have to mean forgotten forever.
 
-• Keep as reference — useful, without repeated suggestions.
-• Later — another chance in a future session.
-• Stop suggesting — let it leave your attention.
+Backburner brings your existing Chrome bookmarks into a small review. Open a page, keep it as a reference, leave it for later, or confirm removal when it is no longer useful. Stop suggesting is also available without deleting the bookmark.
 
-Every option keeps the original Chrome bookmark. Review decisions lets you undo a choice whenever you change your mind.
+A local recovery copy is saved before each removal. Restore it through Review decisions, even after restarting Chrome. Restoration creates a new bookmark; original IDs and dates are not recovered. Copies stay on this device until restored or explicitly forgotten. Uninstalling or clearing extension data erases them. Chrome may sync native changes to other devices.
 
-No new organization system. No accounts, tags, folders to maintain, or infinite feed. Finish when you’ve had enough and return from the toolbar when you want another look.
+No account, history access, AI service, page scanning or analytics server. No new folders, tags or organization system. Finish whenever you like; return from the toolbar. Suggestions use available bookmark dates, not complete browsing history or certainty about your interests.
 
-Local by design: bookmark data and decisions are processed on your device. No history permission, AI service, page scanning, or analytics server. Chrome’s bookmarks permission includes modification capabilities, but Backburner only reads your bookmarks.
+## Disclosures
 
-Suggestions use available bookmark dates, which can be incomplete. Backburner does not know everything you visit or whether you’ve read a page. Decisions stay on this device and are lost when the extension is uninstalled.
+Single purpose: help users revisit existing Chrome bookmarks and resolve them through reference, deferral or confirmed removal with local recovery.
 
-## Single purpose
-Help users revisit existing Chrome bookmarks and make reversible decisions about future review suggestions.
+Permissions: bookmarks for reading, confirmed single-leaf removal and explicit restoration; storage for local decisions, recovery and session records. No additional permissions or remote code.
 
-## Permission justifications
-- bookmarks: read the existing bookmark tree and revalidate current bookmark details for review.
-- storage: persist local decisions/session state and remember the extension’s own tab temporarily.
+The extension locally handles bookmark URLs and recovery titles/content. It transmits none of these to the developer. There are no completion survey questions. Match actual dashboard data-category questions to this policy before owner certification; do not claim no data is processed.
 
-## Privacy declarations for owner verification
-No remote code. No transfer of bookmark data or decision records to the developer or third parties. No sale, advertising use, or unrelated data use. The extension locally handles website URLs and user decisions; do not claim it processes no user data. Match the exact dashboard data-category questions to this implementation and privacy policy before certifying.
+Privacy: https://github.com/rioscesar/Backburner/blob/experiment/first-review/PRIVACY.md
+Support: https://github.com/rioscesar/Backburner/issues
+Category proposal: Productivity. English.
 
-Privacy URL candidate: https://github.com/rioscesar/Backburner/blob/experiment/first-review/PRIVACY.md
-Support URL: https://github.com/rioscesar/Backburner/issues
-Category proposal: Productivity. Language: English.
-
-## Assets
-- icons/icon128.png: store icon.
-- release/screenshot-review.png and screenshot-decisions.png: actual packaged UI with synthetic bookmarks, 1280 × 800.
-- release/promo-tile.png: 440 × 280 tile.
-
-Publisher identity, account access, distribution regions and certifications must be completed by the owner in the dashboard. Verify final URLs and required graphic fields there. A marketing site and demo video are not part of the initial release.
+Use the icon, actual packaged UI screenshots and promo tile from this release. Final publisher identity, regions, dashboard requirements and certification remain owner checks. Prefer a durable release/main privacy URL after approved merge, before deleting the implementation branch.

@@ -1,19 +1,23 @@
 # Backburner support
 
-[Report a problem or ask a question](https://github.com/rioscesar/Backburner/issues).
+[Report a problem](https://github.com/rioscesar/Backburner/issues). Reports are public and require a GitHub account. Include versions and steps with made-up bookmarks. Never include personal URLs, recovery copies, storage dumps or private screenshots. No guaranteed response time.
 
-Issues are public and require a GitHub account. Include the extension version, Chrome version, what you expected, and steps using made-up bookmarks. **Do not include your personal bookmarks, browsing history, storage dumps, or screenshots containing private information.** There is no guaranteed response time.
+## Restore a removed bookmark
 
-## Common questions
+Choose **Review decisions → Removed bookmarks → Restore**. Confirm the destination. Restoration creates a new native bookmark; original IDs/dates are lost. Missing folders require another confirmed destination. Chrome may sync removal and restoration.
 
-**Where did my bookmark go?** Backburner never removes Chrome bookmarks. Keep as reference and Stop suggesting only suppress future suggestions. Open Review decisions and choose Undo to bring one back into consideration.
+Recovery copies persist across browser restarts until restored or explicitly forgotten. **Do not uninstall or clear extension data if you need a copy: that erases local recovery.** Disabling preserves it. Do not downgrade to an older version to troubleshoot.
 
-**Why does Chrome say the extension can change bookmarks?** Chrome’s bookmarks permission combines read and write access. Backburner uses only the reading capability.
+## Pending operations
 
-**Why isn’t a bookmark showing?** It may already have a local decision, be deferred behind unreviewed bookmarks, or have a URL that is not a regular HTTP(S) website. A session keeps its original selection; newly saved bookmarks can appear in a future session.
+An unconfirmed removal can mean Chrome still has the bookmark or that removal completed before its result was saved. Inspect recovery; Backburner never automatically retries deletion. If the original bookmark exists, it will not create a duplicate. You can inspect Chrome and explicitly forget an unneeded copy.
 
-**Saving failed.** Leave the tab open and retry. Backburner does not advance a failed decision. If errors persist, reload. Do not uninstall to troubleshoot if you want to retain local decisions; uninstalling clears them.
+An uncertain restore requires Check restore. A possible match requires your confirmation that it is the restored bookmark. If none is found, you can explicitly allow another attempt, then restore. If a match moved or changed, cancel and inspect Chrome rather than blindly creating another copy. A failed operation preserves its recovery record.
 
-**Another review is open.** Backburner allows one active review writer to prevent conflicting decisions. Close the extra tab or return to the original.
+## Keep, Later and Stop suggesting
 
-**How do I stop using it?** Disable or remove Backburner from Chrome’s Extensions page. Disabling retains local data; removing it loses local decisions. Neither changes your native bookmarks.
+These leave Chrome intact. Undo them in Review decisions to make a bookmark eligible again. Managed bookmarks cannot be removed. Non-web URLs are not suggested. Duplicates are separate native entries; removing one does not remove the others.
+
+## Saving errors
+
+If backing up fails, removal is not attempted. If a native operation succeeded but its final save failed, it may need recovery inspection. Read the pending state; do not assume an error means nothing changed.

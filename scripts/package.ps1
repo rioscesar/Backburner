@@ -1,6 +1,6 @@
 $ErrorActionPreference = 'Stop'
 $packageRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-$packageFiles = @('manifest.json','background.js','review.html','review.css','review.js','domain.js','store.js','icons/icon16.png','icons/icon32.png','icons/icon48.png','icons/icon128.png')
+$packageFiles = @('manifest.json','background.js','review.html','review.css','review.js','domain.js','store.js','removal.js','icons/icon16.png','icons/icon32.png','icons/icon48.png','icons/icon128.png')
 $outputRoot = Join-Path $packageRoot 'dist'
 [IO.Directory]::CreateDirectory($outputRoot) | Out-Null
 $archivePath = Join-Path $outputRoot 'backburner.zip'

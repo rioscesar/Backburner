@@ -22,3 +22,10 @@ test('URL identity is stable and detects changed destinations',async()=>{
   const a=await fingerprintUrl('https://example.com/a');assert.match(a,/^[a-f0-9]{64}$/);
   assert.equal(a,await fingerprintUrl('https://example.com/a'));assert.notEqual(a,await fingerprintUrl('https://example.com/b'));
 });
+test('v1 migration preserves unrelated state and deletes only obsolete survey fields',async()=>{
+  const {emptyState}=await import('../domain.js');const original=emptyState();original.version=1;delete original.recovery;delete original.totals.removed;original.batchSize=4;
+  original.lastSession={started:1,ended:2,reviewed:0,opened:0,counts:{reference:0,dismissed:0,later:0},feeling:'useful',meaningful:true};
+  let saved;const s=createStore({get:async()=>({[STATE_KEY]:original}),set:async v=>{saved=v;}});const migrated=await s.load();
+  assert.equal(migrated.version,2);assert.equal(migrated.batchSize,4);assert.equal('feeling' in migrated.lastSession,false);assert.equal('meaningful' in migrated.lastSession,false);assert.equal(saved[STATE_KEY].version,2);
+  const failed=createStore({get:async()=>({[STATE_KEY]:original}),set:async()=>{throw Error('Failure');}});await assert.rejects(failed.load());assert.equal(original.version,1);
+});

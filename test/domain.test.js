@@ -51,5 +51,5 @@ test('repeated deferral rotates behind older deferred items instead of starving 
 test('schema checker accepts real transitions and rejects damaged/future state',()=>{
   let s=decide(startSession(emptyState(),[node()]),node(),'reference');
   assert.doesNotThrow(()=>validateState(s));assert.doesNotThrow(()=>validateState(finish(s)));
-  for(const bad of [{...s,version:2},{...s,batchSize:0},{...s,entries:{'1':{fingerprint:fp,disposition:'delete',at:1,deferrals:0}}},{...s,session:{...s.session,cursor:99}},{...s,totals:{}}])assert.throws(()=>validateState(bad));
+  for(const bad of [{...s,version:999},{...s,batchSize:0},{...s,entries:{'1':{fingerprint:fp,disposition:'delete',at:1,deferrals:0}}},{...s,session:{...s.session,cursor:99}},{...s,totals:{}}])assert.throws(()=>validateState(bad));
 });
