@@ -6,9 +6,9 @@ Backburner brings existing Chrome bookmarks into a small review. Open something 
 
 ![Backburner review](release/screenshot-review.png)
 
-## Status: developer preview 0.1.9
+## Status: developer preview 0.1.10
 
-This is a working extension candidate, not a Chrome Web Store release. Public launch still needs founder session-size calibration, a newcomer walkthrough, and store submission/review. The first preview session learns its size when you finish; that is not yet the final public default.
+This is a working extension candidate, not a Chrome Web Store release. Manual reviews are intentionally self-paced, with no forced default or learned limit. Public launch still needs a newcomer walkthrough and store submission/review.
 
 ## Try locally
 
@@ -53,6 +53,14 @@ The annual rule also applies to existing kept records, measured from their saved
 
 The completion screen reports factual action counts. **All done** closes the current Backburner tab; saved decisions and recovery copies remain available when you reopen it. **Review more bookmarks** starts another session in the same tab. It asks no survey questions and adds no feedback collection or adaptive behavior.
 
+**Finish whenever it feels enough.** Manual reviews have no fixed batch size or
+daily quota. Keep going while eligible bookmarks remain, finish early, or use
+Review more after completion. Stopping does not set a future limit, and old
+learned sizes no longer restrict new reviews. Each queue is a frozen selection
+of currently eligible bookmarks, not an automatically replenished endless feed.
+An unfinished review keeps its saved queue, even if an older version made it
+short; the next review uses the self-paced policy.
+
 ## A random mix, with a gentle age preference
 
 New review sessions draw from **all eligible bookmarks**, without replacement.
@@ -82,7 +90,7 @@ Enable reminders once on the welcome screen or in **Privacy & help**, accepting 
 
 Backburner can offer one eligible bookmark without a review page open: at most one notification attempt per seven elapsed days, between 09:00 and 18:00 local time. The first opportunity is after one week. Later becomes eligible after fourteen elapsed days; Keep as reference after 365 elapsed days. Eligibility is not a promise of an immediate notification. Due Later items and other eligible items, including expired references, share slots. Ignoring a reminder does not resolve it or escalate interruptions; that item waits at least fourteen days before another offer. These are initial product policies, not measured optima, and are not configurable schedules.
 
-Notifications are silent and contain no bookmark titles or URLs. Clicking brings the selected bookmark into Backburner, never directly to its website. A one-item reminder review does not change manual batch size. If you have an unfinished session, Backburner offers an explicit resume/switch choice rather than overwriting it.
+Notifications are silent and contain no bookmark titles or URLs. Clicking brings the selected bookmark into Backburner, never directly to its website. Reminder reviews still consider just one selected bookmark. If you have an unfinished session, Backburner offers an explicit resume/switch choice rather than overwriting it.
 
 Chrome alarms can be late or disappear across restart; Backburner reconstructs the next opportunity from local state and never sends a catch-up burst. Chrome must be able to run. Sleep, quitting Chrome, denied permission and OS Focus/Do Not Disturb can delay or suppress notifications. API success does not prove you saw one. Interrupted delivery may miss a weekly slot rather than risk duplicate notifications. Check status or turn reminders off in **Privacy & help**; doing so retains decisions and recovery copies.
 

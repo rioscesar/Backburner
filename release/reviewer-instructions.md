@@ -1,6 +1,15 @@
-# Release verification — 0.1.9
+# Release verification — 0.1.10
 
 Use synthetic bookmarks in a clean profile. No account needed.
+
+Manual review must be self-paced for both new and previously calibrated installs.
+Use more than ten eligible bookmarks and a legacy saved batchSize of two: all
+eligible items enter a new queue, reviewed count has no quota, and "Finish whenever
+it feels enough" remains visible. Finish early, then Review more; the prior reviewed
+count must not cap or train future sessions. Even finishing an old calibration:true
+session must not learn a limit. Preserve existing short queues on reload until
+explicitly finished. Legacy fields remain compatible/inert; no data migration.
+Reminders stay one selected bookmark; existing eligibility and timing still apply.
 
 Reproduce interruption after native restore creation but before the final
 recovery-record save, including a browser restart where Chrome reuses the removed
@@ -17,7 +26,7 @@ ordering or year buckets. Record seeded old/recent-first controls and distributi
 checks that reject uniform-only, chronological and excessive-age-weight variants.
 The age preference is bounded at 2x, with baseline chances for recent/unknown
 dates. No age cutoff. Include due Later and annual references, exclude held or
-stopped identities, and preserve batch size. Saved queues must survive reload and
+stopped identities, without applying legacy batch limits. Saved queues must survive reload and
 theme changes without a reroll. Review more starts a new draw. Reminder pool,
 offer-priority, cooldown, reservation and pending-handoff safeguards remain.
 
@@ -64,11 +73,11 @@ Restart Chrome and restore from Removed bookmarks. Verify creation of a new nati
 
 Inject failure before backup save (no remove), on native remove (copy retained), after remove before final save (pending record survives), on create (pending restore), and after create before final save (inspect candidate before retry; no blind duplicates). Test double clicks, stale/managed/folder rejection, corrupt data, v1 migration without survey fields, reload, exclusive tab writer, empty states, literal hostile titles and narrow keyboard-accessible UI. Never treat simulated events as proof of actual multi-device sync behavior.
 
-Before public launch, complete founder session calibration and non-builder walkthrough. Finalize policy/support, publisher declarations and store fields. Submit only tested package after owner review; don't infer store approval or usefulness from unit tests. No downgrade/uninstall as an operation-recovery strategy.
+Before public launch, complete the non-builder walkthrough. The founder-approved self-paced policy replaces the former numeric calibration requirement. Finalize policy/support, publisher declarations and store fields. Submit only tested package after owner review; don't infer store approval or usefulness from unit tests. No downgrade/uninstall as an operation-recovery strategy.
 
 Verify All done closes only the current review tab and reopening preserves saved decisions/recovery. Other tabs stay open.
 
-Verify Review more bookmarks starts another session directly in the same tab with the existing selection and batch size. With no eligible bookmarks, show the empty state.
+Verify Review more bookmarks starts another self-paced eligible queue directly in the same tab, without fixed or learned size. With no eligible bookmarks, show the empty state.
 
 ## Proactive reminder acceptance
 

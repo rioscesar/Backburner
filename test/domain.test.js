@@ -87,12 +87,41 @@ test('due Later entries join the eligible pool and repeat count increases only f
   s=decide(startSession(s,[a],due),a,'later',due);assert.equal(s.entries['1'].deferrals,2);
   assert.equal(eligibleAt(s,a),due+LATER_DELAY);
 });
-test('session freezes its queue, records impressions once, and learns size only on finish',()=>{
+test('session freezes its queue, records impressions once, and never learns a limit on finish',()=>{
   const a=node(),b=node('2');let s=startSession(emptyState(),[a,b],Date.now(),()=>0);
   s=markShown(markShown(s,a),a);assert.equal(s.totals.shown,1);assert.equal(s.batchSize,null);
   assert.deepEqual(startSession(s,[node('3')]),s);
-  s=finish(decide(s,a,'reference'));assert.equal(s.batchSize,1);assert.equal(s.lastSession.reviewed,1);
-  assert.equal(startSession(s,[b,node('3')]).session.queue.length,1);
+  s=finish(decide(s,a,'reference'));assert.equal(s.batchSize,null);assert.equal(s.lastSession.reviewed,1);
+  assert.equal(startSession(s,[b,node('3')]).session.queue.length,2);
+});
+test('self-paced queues ignore legacy limits and finishing even an old calibration session never trains one',()=>{
+  const nodes=Array.from({length:25},(_,i)=>node(String(i+1)));
+  for(const batchSize of [null,2,10]) {
+    const initial={...emptyState(),batchSize};
+    let state=startSession(initial,nodes,1000,()=>0);
+    assert.equal(state.session.queue.length,25);
+    assert.equal(state.session.calibration,false);
+    state.session.calibration=true;
+    for(const current of nodes.slice(0,11))state=decide(state,current,'reference',1001);
+    state=finish(state,1002);
+    assert.equal(state.batchSize,batchSize);
+    assert.equal(state.lastSession.reviewed,11);
+    const next=startSession(state,nodes,1003,()=>0);
+    assert.equal(next.session.queue.length,14);
+    assert.deepEqual(next.entries,state.entries);
+    assert.deepEqual(initial,{...emptyState(),batchSize});
+  }
+});
+test('an unfinished legacy short queue remains intact until a new self-paced review starts',()=>{
+  const nodes=[node('1'),node('2'),node('3')];
+  const old=startSession({...emptyState(),batchSize:1},nodes,1000,()=>0);
+  old.session.queue=old.session.queue.slice(0,1);
+  old.session.calibration=true;
+  const saved=validateState(JSON.parse(JSON.stringify(old)));
+  assert.strictEqual(startSession(saved,nodes,1001,()=>{throw Error('unexpected reroll');}),saved);
+  const next=startSession(finish(saved,1002),nodes,1003,()=>0);
+  assert.equal(next.session.queue.length,3);
+  assert.equal(next.session.calibration,false);
 });
 test('stale decision and unknown action controls fail without changing state',()=>{
   const s=startSession(emptyState(),[node()]);const before=structuredClone(s);
@@ -118,7 +147,7 @@ test('Later is a fourteen-day not-before policy across restart and manual review
   assert.equal(candidates([node('1',{fingerprint:otherFp})],s,at+1).length,1);
 });
 
-test('targeted reminder reviews preserve state and batch calibration, and never overwrite a session',()=>{
+test('targeted reminders stay one item, preserve legacy data and never overwrite a session',()=>{
   const n=node(),s=emptyState();s.onboarded=true;
   const next=startReminderSession(s,n,1000);
   assert.equal(next.session.calibration,false);assert.equal(next.session.queue.length,1);

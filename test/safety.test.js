@@ -127,15 +127,18 @@ test('All done handles missing tab IDs and Chrome failures locally, with a worki
   }
 });
 
-test('Review more reuses selection and batch policy in place, while repeated clicks preserve one session',async()=>{
+test('Review more includes every eligible bookmark despite a legacy batch size and repeated clicks preserve one session',async()=>{
   const nodes=[1,2,3].map(id=>({id:String(id),url:`https://example.com/${id}`,title:`Synthetic ${id}`,dateAdded:id}));
   const h=await completionHarness(nodes), before=h.read();
   await Promise.all([h.click('review-more'),h.click('review-more')]);
   const saved=h.read(), ids=saved.session.queue.map(n=>n.id);
-  assert.equal(ids.length,2);assert.equal(new Set(ids).size,2);
+  assert.equal(ids.length,3);assert.equal(new Set(ids).size,3);
   assert.ok(ids.every(id=>nodes.some(n=>n.id===id)));
   assert.equal(h.elements.get('bookmark-title').textContent,`Synthetic ${ids[0]}`);
   assert.match(h.elements.get('selection-reason').textContent,/Random mix/);
+  assert.equal(h.elements.get('progress').textContent,'0 reviewed');
+  assert.equal(h.elements.get('progress-detail').textContent,'Finish whenever it feels enough');
+  assert.equal(saved.session.calibration,false);
   assert.equal(saved.batchSize,2);assert.deepEqual(saved.entries,before.entries);
   assert.deepEqual(saved.recovery,before.recovery);assert.deepEqual(saved.lastSession,before.lastSession);
   assert.equal(saved.totals.sessions,before.totals.sessions);assert.equal(saved.totals.shown,1);
@@ -154,6 +157,29 @@ test('Review more shows the existing empty state and preserves completion on sav
   assert.ok(h.elements.get('notice').children.length);
   h.failSave(false);await h.click('review-more');
   assert.equal(h.elements.get('review').hidden,false);assert.equal(h.read().session.queue.length,1);
+});
+
+test('manual UI can review beyond ten, finish freely and continue without learning a quota',async()=>{
+  const nodes=Array.from({length:15},(_,i)=>({id:String(i+1),url:`https://example.com/self-paced/${i}`,title:`Synthetic ${i}`}));
+  const h=await completionHarness(nodes);
+  await h.evaluate("chrome.bookmarks.get=async id=>[nodes.find(n=>n.id===id)];renderHome()");
+  assert.match(h.elements.get('home-copy').textContent,/Finish whenever it feels enough/);
+  assert.doesNotMatch(h.elements.get('home-copy').textContent,/Up to|first look/);
+  await h.click('start');
+  assert.equal(h.read().session.queue.length,15);
+  for(let i=0;i<11;i++)await h.click('keep');
+  assert.equal(h.read().session.reviewed,11);
+  assert.equal(h.elements.get('progress').textContent,'11 reviewed');
+  assert.equal(h.elements.get('progress-detail').textContent,'Finish whenever it feels enough');
+  await h.click('finish');
+  assert.equal(h.read().lastSession.reviewed,11);
+  assert.equal(h.read().batchSize,2,'legacy data is retained but must not become a learned quota');
+  const entries=h.read().entries;
+  await h.click('review-more');
+  assert.equal(h.read().session.queue.length,4);
+  assert.deepEqual(h.read().entries,entries);
+  assert.equal(h.elements.get('progress').textContent,'0 reviewed');
+  assert.equal(h.elements.get('progress-detail').textContent,'Finish whenever it feels enough');
 });
 
 test('review folder metadata is literal, preserves its leaf, refreshes, and is not persisted',async()=>{

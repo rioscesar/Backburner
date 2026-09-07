@@ -92,7 +92,7 @@ test('only eligible bookmarks enter the draw, including due Later and annual ref
   assert.deepEqual(eligible.map(n=>n.id),['1','2','6','7','8','9']);
   const draws=[.8,.1,.2,.3,.4,.5];
   const next=startSession(state,nodes,at,sequence(draws));
-  assert.deepEqual(next.session.queue.map(n=>n.id),['2','6','7']);
+  assert.deepEqual(next.session.queue.map(n=>n.id),['2','6','7','8','9','1']);
   assert.equal(draws.length,0);
   assert.deepEqual(state,before);assert.deepEqual(next.entries,state.entries);
   assert.doesNotThrow(()=>validateState(next));

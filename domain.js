@@ -1,9 +1,8 @@
-// Set only after observed founder calibration. A null default is a preview gate.
-export const DEFAULT_BATCH_SIZE = null;
 export const LATER_DELAY = 14 * 24 * 60 * 60 * 1000;
 export const REFERENCE_DELAY = 365 * 24 * 60 * 60 * 1000;
 export const DISPOSITIONS = ['reference', 'dismissed', 'later'];
-export const emptyState = () => ({ version: 2, onboarded: false, batchSize: DEFAULT_BATCH_SIZE,
+// batchSize/calibration remain readable only for saved-state compatibility.
+export const emptyState = () => ({ version: 2, onboarded: false, batchSize: null,
   entries: {}, recovery: {}, session: null, lastSession: null, totals: { shown: 0, opened: 0, reference: 0, dismissed: 0, later: 0, removed: 0, sessions: 0 } });
 
 export function safeUrl(value) {
@@ -77,10 +76,10 @@ export function candidates(nodes, state, now = Date.now()) {
 export function startSession(state, nodes, now = Date.now(), random = Math.random) {
   if (state.session) return state;
   const next = structuredClone(state);
-  const selected = randomOrder(candidates(nodes, state, now),now,random).slice(0, state.batchSize ?? nodes.length);
+  const selected = randomOrder(candidates(nodes, state, now),now,random);
   if (!selected.length) return next;
   next.session = { started: now, queue: selected.map(n => ({ id:n.id, fingerprint:n.fingerprint })),
-    cursor: 0, reviewed: 0, opened: 0, shown: [], counts: {reference:0, dismissed:0, later:0, removed:0}, calibration: state.batchSize === null };
+    cursor: 0, reviewed: 0, opened: 0, shown: [], counts: {reference:0, dismissed:0, later:0, removed:0}, calibration: false };
   return next;
 }
 
@@ -117,7 +116,6 @@ export function decide(state, node, disposition, now = Date.now()) {
 export function finish(state, now = Date.now()) {
   const next = structuredClone(state), session = next.session;
   if (!session) return next;
-  if (session.calibration && session.reviewed > 0) next.batchSize = session.reviewed;
   next.lastSession = { started:session.started, ended:now, reviewed:session.reviewed, opened:session.opened,
     counts:session.counts };
   next.totals.sessions++; next.session = null;

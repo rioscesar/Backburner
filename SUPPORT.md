@@ -38,6 +38,13 @@ If backing up fails, removal is not attempted. If a native operation succeeded b
 
 ## Selection and appearance
 
+Manual reviews are self-paced: **Finish whenever it feels enough.** There is no
+fixed or learned batch limit or daily quota. Finish early or keep going while
+eligible bookmarks remain; Review more starts another eligible queue. Stopping
+does not determine future session size, and previously learned limits are ignored.
+Unfinished saved queues retain their original contents/order until finished;
+new reviews use the self-paced policy. Reminder reviews remain one selected item.
+
 New sessions use weighted randomness, with older recorded activity getting at
 most twice the weight of a new or unknown-date bookmark. Recent saves remain
 eligible; there are no year quotas or guarantees against repeats across sessions.

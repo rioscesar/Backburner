@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createStore,STATE_KEY,fingerprintUrl} from '../store.js';
-import {emptyState,eligibleAt,REFERENCE_DELAY} from '../domain.js';
+import {emptyState,eligibleAt,REFERENCE_DELAY,startSession,decide,finish} from '../domain.js';
+import {node} from './fixtures.js';
 test('failed storage write does not advance memory and retry succeeds',async()=>{
   let fail=true, saved;
   const store=createStore({get:async()=>({}),set:async value=>{if(fail)throw Error('synthetic quota');saved=structuredClone(value);}});
@@ -45,4 +46,26 @@ test('v1 migration preserves unrelated state and deletes only obsolete survey fi
   let saved;const s=createStore({get:async()=>({[STATE_KEY]:original}),set:async v=>{saved=v;}});const migrated=await s.load();
   assert.equal(migrated.version,2);assert.equal(migrated.batchSize,4);assert.equal('feeling' in migrated.lastSession,false);assert.equal('meaningful' in migrated.lastSession,false);assert.equal(saved[STATE_KEY].version,2);
   const failed=createStore({get:async()=>({[STATE_KEY]:original}),set:async()=>{throw Error('Failure');}});await assert.rejects(failed.load());assert.equal(original.version,1);
+});
+
+test('persisted legacy limits and short queues survive reload but do not constrain subsequent reviews',async()=>{
+  const nodes=Array.from({length:15},(_,i)=>node(String(i+1)));
+  const original=startSession({...emptyState(),batchSize:2},nodes,1000,()=>0);
+  original.session.queue=original.session.queue.slice(0,2);
+  original.session.calibration=true;
+  let saved={[STATE_KEY]:structuredClone(original)},writes=0;
+  const storage={get:async()=>structuredClone(saved),set:async value=>{writes++;saved=structuredClone(value);}};
+  const store=createStore(storage);
+  assert.deepEqual(await store.load(),original);
+  assert.equal(writes,0);
+  await store.update(s=>finish(decide(s,nodes[0],'later',1001),1002));
+  const resumed=createStore(storage),loaded=await resumed.load();
+  assert.equal(loaded.batchSize,2);
+  assert.equal(loaded.lastSession.reviewed,1);
+  const next=await resumed.update(s=>startSession(s,nodes,1003,()=>0));
+  assert.equal(next.session.queue.length,14);
+  assert.equal(next.session.calibration,false);
+  assert.deepEqual(next.entries,loaded.entries);
+  assert.deepEqual(next.recovery,loaded.recovery);
+  assert.equal((await createStore(storage).load()).session.queue.length,14);
 });

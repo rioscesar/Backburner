@@ -1,4 +1,4 @@
-import { flatten, folderPath, candidates, activityDate, safeUrl, matches, eligibleAt, startSession, startReminderSession, markShown, decide, finish, undo, DEFAULT_BATCH_SIZE } from './domain.js';
+import { flatten, folderPath, candidates, activityDate, safeUrl, matches, eligibleAt, startSession, startReminderSession, markShown, decide, finish, undo } from './domain.js';
 import { createStore, fingerprintUrl } from './store.js';
 import { createRemoval } from './removal.js';
 
@@ -68,8 +68,8 @@ async function renderReview() {
   }
   await save(s => markShown(s,current));
   show('review');
-  $('progress').textContent=state.session.calibration ? `${state.session.reviewed} reviewed · first look` : `Bookmark ${cursor+1} of ${queue.length}`;
-  $('progress-detail').textContent=state.session.calibration ? 'Finish whenever it feels enough' : 'One small session';
+  $('progress').textContent=state.session.reminder ? `Bookmark ${cursor+1} of ${queue.length}` : `${state.session.reviewed} reviewed`;
+  $('progress-detail').textContent=state.session.reminder ? 'One bookmark from your reminder' : 'Finish whenever it feels enough';
   const url=new URL(current.url);
   $('domain-mark').textContent=url.hostname[0] || '↗';
   $('domain').textContent=url.hostname;
@@ -91,7 +91,7 @@ async function renderReview() {
 function renderHome() {
   show('home'); const available=candidates(nodes,state).length;
   $('start').hidden=!available;
-  $('home-copy').textContent=available ? `${available.toLocaleString()} ${available===1?'bookmark is':'bookmarks are'} ready for another look. ${state.batchSize ? `Up to ${state.batchSize} in your next session.` : 'Finish your first look whenever you like.'}` : nodes.length ? 'Nothing ready for review now. Later waits at least 14 days; Keep as reference waits 365 days. Stop suggesting has no expiry. You can check reminder settings in Privacy & help or undo a choice in Review decisions.' : 'No web bookmarks to revisit yet. Save a page in Chrome, then come back. Folders and non-web links aren’t included.';
+  $('home-copy').textContent=available ? `${available.toLocaleString()} ${available===1?'bookmark is':'bookmarks are'} ready for another look. Finish whenever it feels enough.` : nodes.length ? 'Nothing ready for review now. Later waits at least 14 days; Keep as reference waits 365 days. Stop suggesting has no expiry. You can check reminder settings in Privacy & help or undo a choice in Review decisions.' : 'No web bookmarks to revisit yet. Save a page in Chrome, then come back. Folders and non-web links aren’t included.';
 }
 
 function renderSummary() {
@@ -221,7 +221,6 @@ navigator.locks.request('backburner-review-writer',{ifAvailable:true},async lock
     if(Object.keys(state.entries).some(id=>!valid.has(id)||!matches(state.entries[id],valid.get(id)))) {
       await save(s=>{for(const id of Object.keys(s.entries))if(!valid.has(id)||!matches(s.entries[id],valid.get(id)))delete s.entries[id];return s;});
     }
-    $('calibration-note').hidden=DEFAULT_BATCH_SIZE!==null;
     if(!state.onboarded)show('welcome');else if(state.session)await renderReview();else renderHome();
     await refreshReminders();
     if(location.hash==='#reminder' || reminderRequested) {
