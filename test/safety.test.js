@@ -131,7 +131,11 @@ test('Review more reuses selection and batch policy in place, while repeated cli
   const nodes=[1,2,3].map(id=>({id:String(id),url:`https://example.com/${id}`,title:`Synthetic ${id}`,dateAdded:id}));
   const h=await completionHarness(nodes), before=h.read();
   await Promise.all([h.click('review-more'),h.click('review-more')]);
-  const saved=h.read();assert.deepEqual(saved.session.queue.map(n=>n.id),['1','2']);
+  const saved=h.read(), ids=saved.session.queue.map(n=>n.id);
+  assert.equal(ids.length,2);assert.equal(new Set(ids).size,2);
+  assert.ok(ids.every(id=>nodes.some(n=>n.id===id)));
+  assert.equal(h.elements.get('bookmark-title').textContent,`Synthetic ${ids[0]}`);
+  assert.match(h.elements.get('selection-reason').textContent,/Random mix/);
   assert.equal(saved.batchSize,2);assert.deepEqual(saved.entries,before.entries);
   assert.deepEqual(saved.recovery,before.recovery);assert.deepEqual(saved.lastSession,before.lastSession);
   assert.equal(saved.totals.sessions,before.totals.sessions);assert.equal(saved.totals.shown,1);
@@ -223,7 +227,7 @@ test('Keep and Stop handlers report annual versus permanent suppression without 
 
 test('reminder handoff preserves an unfinished review until explicit switch and uses the selected item',async()=>{
   const h=await completionHarness([1,2].map(id=>({id:String(id),url:`https://example.com/${id}`,title:`Synthetic ${id}`})));
-  await h.evaluate('save(s=>startSession(s,nodes))');
+  await h.evaluate('save(s=>startSession(s,nodes,Date.now(),()=>0))');
   const before=h.read(),target=await h.evaluate('nodes[1]');
   h.setReminder({enabled:true,status:'pending',permission:true,nextAt:null,pending:{id:target.id,fingerprint:target.fingerprint,attemptAt:1000,pool:'other',clicked:true}});
   await h.evaluate('runReminder(showReminder)');
@@ -239,7 +243,7 @@ test('reminder handoff preserves an unfinished review until explicit switch and 
 test('reminder resume, stale target and save failure cannot erase the current session',async()=>{
   for(const mode of ['resume','stale','failure']) {
     const h=await completionHarness([1,2].map(id=>({id:String(id),url:`https://example.com/${id}`,title:'Synthetic'})));
-    await h.evaluate('save(s=>startSession(s,nodes))');
+    await h.evaluate('save(s=>startSession(s,nodes,Date.now(),()=>0))');
     const before=h.read(),target=await h.evaluate('nodes[1]');
     h.setReminder({enabled:true,status:'pending',permission:true,nextAt:null,pending:{id:target.id,fingerprint:mode==='stale'?'b'.repeat(64):target.fingerprint,attemptAt:1000,pool:'other',clicked:true}});
     await h.evaluate('runReminder(showReminder)');

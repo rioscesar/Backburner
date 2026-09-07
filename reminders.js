@@ -1,4 +1,4 @@
-import { candidates, eligibleAt, emptyState, flatten, LATER_DELAY, matches, migrateState } from './domain.js';
+import { candidates, eligibleAt, emptyState, flatten, LATER_DELAY, matches, migrateState, randomOrder } from './domain.js';
 import { fingerprintUrl, STATE_KEY } from './store.js';
 
 export const REMINDER_KEY = 'backburner.reminders.v1';
@@ -61,7 +61,7 @@ const sanitized = pending => pending && ({
   pool: pending.pool, clicked: pending.clicked, ...(pending.stale ? { stale: true } : {})
 });
 
-export function createReminders({ storage, bookmarks, alarms, notifications, permissions, action, isReviewVisible, now = Date.now }) {
+export function createReminders({ storage, bookmarks, alarms, notifications, permissions, action, isReviewVisible, now = Date.now, random = Math.random }) {
   let jobs = Promise.resolve();
 
   async function permission() {
@@ -157,9 +157,13 @@ export function createReminders({ storage, bookmarks, alarms, notifications, per
     const due = options.filter(option => option.at <= at);
     const later = due.filter(option => option.pool === 'later')
       .sort((a, b) => a.at - b.at || a.node.id.localeCompare(b.node.id));
+    if(later.length && reminder.lastPool!=='later')return later[0];
     const other = due.filter(option => option.pool === 'other')
       .sort((a, b) => (a.offeredAt ?? -1) - (b.offeredAt ?? -1));
-    return reminder.lastPool === 'later' ? other[0] || later[0] : later[0] || other[0];
+    if(!other.length)return later[0];
+    const tied=other.filter(option=>option.offeredAt===other[0].offeredAt);
+    const [selected]=randomOrder(tied.map(option=>option.node),at,random);
+    return tied.find(option=>option.node===selected);
   }
 
   function nextTime(options, reminder, at) {

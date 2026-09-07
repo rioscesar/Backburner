@@ -6,7 +6,7 @@ Backburner brings existing Chrome bookmarks into a small review. Open something 
 
 ![Backburner review](release/screenshot-review.png)
 
-## Status: developer preview 0.1.7
+## Status: developer preview 0.1.8
 
 This is a working extension candidate, not a Chrome Web Store release. Public launch still needs founder session-size calibration, a newcomer walkthrough, and store submission/review. The first preview session learns its size when you finish; that is not yet the final public default.
 
@@ -32,6 +32,29 @@ The review shows the bookmark's current Chrome folder path beneath its URL for c
 The annual rule also applies to existing kept records, measured from their saved decision time, not the update date. Undo or changing a bookmark's URL makes it eligible again; renaming or moving it does not reset the decision. Stop suggesting is the explicit permanent opt-out for that bookmark identity, not a guarantee against changes made outside Backburner.
 
 The completion screen reports factual action counts. **All done** closes the current Backburner tab; saved decisions and recovery copies remain available when you reopen it. **Review more bookmarks** starts another session in the same tab. It asks no survey questions and adds no feedback collection or adaptive behavior.
+
+## A random mix, with a gentle age preference
+
+New review sessions draw from **all eligible bookmarks**, without replacement.
+Older recorded activity gets a little more weight, not a place at the front of
+a chronological backlog. A bookmark saved last week can lead your next session;
+there is no minimum age or year quota. Unknown dates keep a baseline chance.
+Randomness can still repeat years or unresolved bookmarks across sessions.
+An unfinished session keeps its saved order, even after an update or restart.
+
+The initial policy is a weight from 1 to 2: baseline 1 plus recorded age divided
+by the oldest recorded age in the draw pool. Missing dates use 1; equal ages have
+equal weights. Age uses the newer valid Chrome creation/last-used timestamp,
+not comprehensive browsing history. This preference is not a measured optimum,
+an inferred interest score or a promise of selection. Later, annual Keep and
+Stop exclusions still apply. Reminders preserve their due-Later and
+never-offered/oldest-offer priorities, using this mix for other-pool ties.
+
+## Appearance
+
+Backburner automatically follows the light/dark preference reported by Chrome,
+usually from your system, including changes while the page is open. It does not
+copy arbitrary installed Chrome-theme colors. No extra setting or permission.
 
 ## Optional quiet reminders
 

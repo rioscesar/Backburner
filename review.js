@@ -81,7 +81,8 @@ async function renderReview() {
   $('folder-ancestors').hidden=currentFolder.length<2;
   $('folder-ancestors').textContent=currentFolder.slice(0,-1).join(' / ');
   $('folder-leaf').textContent=(currentFolder.length>1?' / ':'')+currentFolder.at(-1);
-  $('selection-reason').textContent=current.dateLastUsed ? 'Older recorded bookmark activity · not full browsing history' : current.dateAdded ? 'Selected from earlier saves · last use unknown' : 'No date recorded · not necessarily unused';
+  $('selection-reason').textContent=state.session.reminder ? 'Reminder rotation · not a relevance score' :
+    activityDate(current) ? 'Random mix · older recorded dates get a gentle preference' : 'Random mix · date unknown, not necessarily unused';
   const entry=state.entries[current.id];
   $('deferrals').textContent=matches(entry,current) && entry.deferrals>0 ? `You’ve chosen Later ${entry.deferrals} ${entry.deferrals===1?'time':'times'}. No rush.` : '';
   $('bookmark-title').focus({preventScroll:true});

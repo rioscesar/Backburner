@@ -7,7 +7,7 @@ import {node} from './fixtures.js';
 const key='11111111-1111-4111-8111-111111111111';
 function fixture() {
   const original=node('10',{parentId:'1',index:0}), sibling=node('11',{parentId:'1',index:1});
-  let state=startSession(emptyState(),[original,sibling]);
+  let state=startSession(emptyState(),[original,sibling],Date.now(),()=>0);
   const native=new Map([['1',{id:'1',title:'Synthetic folder',children:[]}],['2',{id:'2',title:'Alternative',children:[]}],['10',original],['11',sibling]]);
   let writes=0,removes=0,creates=0;
   const f={native,original,failWrite:0,failRemove:false,failCreate:false,

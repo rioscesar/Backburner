@@ -11,9 +11,9 @@ test('tree controls include only eligible leaves, even deeply nested',()=>{
   assert.deepEqual(flatten([{id:'0',children:[node(),node('2',{url:'javascript:alert(1)'})]}]).map(n=>n.id),['1']);
   let tree=[node()];for(let i=0;i<2000;i++)tree=[{children:tree}];assert.equal(flatten(tree).length,1);
 });
-test('selection interleaves unknown dates, orders dated records and does not equate unknown with unused',()=>{
+test('eligibility includes dated and unknown records without imposing a selection order',()=>{
   const nodes=[node('1',{dateAdded:3000}),node('2',{dateAdded:undefined}),node('3',{dateAdded:1000}),node('4',{dateAdded:2000})];
-  assert.deepEqual(candidates(nodes,emptyState()).map(n=>n.id),['3','2','4','1']);
+  assert.deepEqual(candidates(nodes,emptyState()).map(n=>n.id),['1','2','3','4']);
 });
 test('folder context follows native ancestry without including the invisible root or mutating data',()=>{
   const leaf=node('4',{parentId:'3'});
@@ -79,16 +79,16 @@ test('Keep expires after exactly 365 elapsed days, repeats reset it, and Stop ne
     assert.deepEqual(candidates([n],stopped,Number.MAX_SAFE_INTEGER),[]);
   }
 });
-test('deferred entries come after unseen ones and repeat count increases only for matching URL',()=>{
+test('due Later entries join the eligible pool and repeat count increases only for matching URL',()=>{
   const a=node(),b=node('2');let s=startSession(emptyState(),[a]);s=finish(decide(s,a,'later'));
   const due=s.entries['1'].at+LATER_DELAY;
   assert.deepEqual(candidates([a,b],s,due-1).map(n=>n.id),['2']);
-  assert.deepEqual(candidates([a,b],s,due).map(n=>n.id),['2','1']);
+  assert.deepEqual(candidates([a,b],s,due).map(n=>n.id),['1','2']);
   s=decide(startSession(s,[a],due),a,'later',due);assert.equal(s.entries['1'].deferrals,2);
   assert.equal(eligibleAt(s,a),due+LATER_DELAY);
 });
 test('session freezes its queue, records impressions once, and learns size only on finish',()=>{
-  const a=node(),b=node('2');let s=startSession(emptyState(),[a,b]);
+  const a=node(),b=node('2');let s=startSession(emptyState(),[a,b],Date.now(),()=>0);
   s=markShown(markShown(s,a),a);assert.equal(s.totals.shown,1);assert.equal(s.batchSize,null);
   assert.deepEqual(startSession(s,[node('3')]),s);
   s=finish(decide(s,a,'reference'));assert.equal(s.batchSize,1);assert.equal(s.lastSession.reviewed,1);
@@ -101,11 +101,12 @@ test('stale decision and unknown action controls fail without changing state',()
   assert.throws(()=>decide(s,node(),'delete'));assert.deepEqual(s,before);
   assert.doesNotThrow(()=>decide(s,node(),'reference'));
 });
-test('repeated deferral rotates behind older deferred items instead of starving them',()=>{
-  const a=node(),b=node('2');let s=startSession(emptyState(),[a,b]);
+test('repeated deferral resets its deadline without withholding other due Later entries',()=>{
+  const a=node(),b=node('2');let s=startSession(emptyState(),[a,b],100,()=>0);
   s=decide(s,a,'later',100);s=decide(s,b,'later',200);s=finish(s);s.batchSize=1;
-  s=decide(startSession(s,[a,b],200+LATER_DELAY),a,'later',300+LATER_DELAY);s=finish(s);
-  assert.deepEqual(candidates([a,b],s,300+2*LATER_DELAY).map(n=>n.id),['2','1']);
+  s=decide(startSession(s,[a,b],200+LATER_DELAY,()=>0),a,'later',300+LATER_DELAY);s=finish(s);
+  assert.deepEqual(candidates([a,b],s,300+LATER_DELAY).map(n=>n.id),['2']);
+  assert.deepEqual(candidates([a,b],s,300+2*LATER_DELAY).map(n=>n.id),['1','2']);
 });
 
 test('Later is a fourteen-day not-before policy across restart and manual review-more sessions',()=>{

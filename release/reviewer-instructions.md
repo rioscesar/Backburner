@@ -1,6 +1,22 @@
-# Release verification — 0.1.7
+# Release verification — 0.1.8
 
 Use synthetic bookmarks in a clean profile. No account needed.
+
+New sessions must use weighted random draws without replacement, not old-first
+ordering or year buckets. Record seeded old/recent-first controls and distribution
+checks that reject uniform-only, chronological and excessive-age-weight variants.
+The age preference is bounded at 2x, with baseline chances for recent/unknown
+dates. No age cutoff. Include due Later and annual references, exclude held or
+stopped identities, and preserve batch size. Saved queues must survive reload and
+theme changes without a reroll. Review more starts a new draw. Reminder pool,
+offer-priority, cooldown, reservation and pending-handoff safeguards remain.
+
+Verify browser-reported light/dark preference on the exact package, including
+live switching, review/help/decisions, notices, confirmation buttons, native
+controls, keyboard focus and narrow layouts. Check readable text contrast in
+both palettes and prove the dark-theme checker rejects a forced light/low-contrast
+control. No stored theme preference, permissions or session changes. Capture
+synthetic light/dark views. Arbitrary Chrome-theme color matching is not claimed.
 
 Keep as reference must exclude a matching bookmark until exactly 365 elapsed days
 after its saved decision, for both manual and proactive review. Test one millisecond
@@ -28,7 +44,7 @@ must be shown before accepting the action. At desktop and narrow widths, long
 ancestry must ellipsize before the leaf; long leaf names must wrap without
 horizontal overflow. Full text stays in the DOM/tooltip, with no links or controls.
 Hostile folder names render literally. Confirm no new path persistence, permission,
-notification content, selection or recovery behavior.
+notification content or recovery behavior from folder metadata.
 
 Run npm run package and npm test; load dist/unpacked, the exact extracted ZIP, and record its SHA256 and Chrome version.
 

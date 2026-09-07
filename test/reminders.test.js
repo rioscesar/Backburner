@@ -9,13 +9,14 @@ const HOUR = 3600000;
 const local = (day = 1, hour = 10) => new Date(2026, 0, day, hour).getTime();
 const copy = value => structuredClone(value);
 
-async function harness({ at = local(), granted = true, tree = [node()], reminder, lifecycle = emptyState() } = {}) {
+async function harness({ at = local(), granted = true, tree = [node()], reminder, lifecycle = emptyState(), random = () => 0 } = {}) {
   const data = { [STATE_KEY]: copy(lifecycle) };
   if (reminder !== undefined) data[REMINDER_KEY] = copy(reminder);
   let clock = at, visible = false, savedAlarm, controller;
   const log = [], active = {};
   const failures = { save: null, create: false, tree: false, permission: false, afterCreate: false };
   const api = {
+    random,
     now: () => clock,
     storage: {
       get: async keys => Object.fromEntries((Array.isArray(keys) ? keys : [keys])
@@ -374,7 +375,7 @@ test('unanswered item cooldown is fourteen days, not the global seven-day cap', 
   assert.equal(h.attempts().length, 2);
 });
 
-test('other pool prefers never-offered items then oldest offers in existing stable order', async () => {
+test('other pool preserves never-offered then oldest-offer priority with controlled draws', async () => {
   const h = await harness({ tree: [node('1'), node('2'), node('3')] });
   const offered = [];
   await h.controller.setEnabled(true);
@@ -383,6 +384,40 @@ test('other pool prefers never-offered items then oldest offers in existing stab
     offered.push((await h.controller.check()).pending.id);
   }
   assert.deepEqual(offered, ['1', '2', '3', '1', '2']);
+});
+
+test('other-pool ties use weighted randomness and a pending target is never rerolled',async()=>{
+  for(const [draws,expected] of [[[.5,.4],'1'],[[.8,.4],'2']]) {
+    const values=[...draws];
+    const h=await harness({tree:[node('1',{dateAdded:1000}),node('2',{dateAdded:local()-WEEK})],
+      random:()=>{assert.ok(values.length,'pending target was rerolled');return values.shift();}});
+    const before=copy(h.data[STATE_KEY]);
+    const result=await h.enableDue();
+    assert.equal(result.pending.id,expected);
+    assert.equal(values.length,0);
+    h.reload();
+    assert.equal((await h.controller.check()).pending.id,expected);
+    assert.equal((await h.controller.click()).pending.id,expected);
+    assert.equal(h.attempts().length,1);
+    assert.deepEqual(h.data[STATE_KEY],before);
+  }
+});
+
+test('random preference cannot jump ahead of due Later or never-offered reminder priority',async()=>{
+  const draws=[.9,.1];
+  const h=await harness({tree:[node('1'),node('2'),node('3')],random:()=>{
+    assert.ok(draws.length,'a singleton priority tier should not reroll');return draws.shift();
+  }});
+  await h.later('1',local()-LATER_DELAY);
+  assert.equal((await h.enableDue()).pending.id,'1');
+  assert.equal(draws.length,2,'due Later keeps its guaranteed pool turn');
+  h.advance(h.at+WEEK);
+  assert.equal((await h.controller.check()).pending.id,'3');
+  h.advance(h.at+WEEK);
+  assert.equal((await h.controller.check()).pending.id,'1');
+  h.advance(h.at+WEEK);
+  assert.equal((await h.controller.check()).pending.id,'2','unoffered item wins over a previously offered item');
+  assert.equal(draws.length,0);
 });
 
 test('click journals clicked before handoff and ignores only the offer cooldown', async () => {

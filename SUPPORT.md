@@ -29,6 +29,21 @@ bypass opt-in, the weekly attention limit or Chrome/OS delivery settings.
 
 If backing up fails, removal is not attempted. If a native operation succeeded but its final save failed, it may need recovery inspection. Read the pending state; do not assume an error means nothing changed.
 
+## Selection and appearance
+
+New sessions use weighted randomness, with older recorded activity getting at
+most twice the weight of a new or unknown-date bookmark. Recent saves remain
+eligible; there are no year quotas or guarantees against repeats across sessions.
+Later and Keep still wait for their deadlines, and Stop remains excluded.
+Existing unfinished sessions retain their original order. Finish for now, then
+Review more bookmarks to start a new randomized session without resetting data.
+
+Light/dark appearance follows the preference reported by Chrome, usually from
+your system, and changes live. An installed Chrome theme does not necessarily
+change that preference or expose its palette to extension pages. After updating
+an unpacked installation in its existing directory, reload the extension and
+reopen the review page. Do not uninstall or clear storage to change appearance.
+
 ## Reminders and Later
 
 Reminders are opt-in through the welcome screen or Privacy & help. Without permission, manual review still works. After enabling, the first opportunity is no earlier than one week later. There is at most one attempt per seven elapsed days, during 09:00-18:00 local time. Later is not eligible again for fourteen elapsed days, including in Review more; it then shares future reminder slots with other eligible bookmarks. Ignored reminders do not escalate.

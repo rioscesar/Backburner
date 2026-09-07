@@ -47,15 +47,20 @@ const validDate = value => Number.isFinite(value) && value > 0 && value <= Date.
 export const activityDate = node => Math.max(validDate(node.dateAdded), validDate(node.dateLastUsed));
 export const matches = (entry, node) => entry?.fingerprint === node.fingerprint;
 
-function interleave(nodes) {
-  const dated = nodes.filter(n => activityDate(n)).sort((a,b) => activityDate(a)-activityDate(b) || a.id.localeCompare(b.id));
-  const unknown = nodes.filter(n => !activityDate(n)).sort((a,b) => a.id.localeCompare(b.id));
-  const result = [];
-  for (let i=0; i<Math.max(dated.length, unknown.length); i++) {
-    if (dated[i]) result.push(dated[i]);
-    if (unknown[i]) result.push(unknown[i]);
-  }
-  return result;
+export function randomOrder(nodes, now = Date.now(), random = Math.random) {
+  if(nodes.length<2)return [...nodes];
+  const ages=nodes.map(node=>{
+    const date=activityDate(node);
+    return date ? Math.max(0,now-date) : 0;
+  });
+  const oldest=ages.reduce((max,age)=>Math.max(max,age),0);
+  // Independent exponential keys give a weighted draw without replacement.
+  return nodes.map((node,index)=>{
+    const draw=random();
+    if(!Number.isFinite(draw) || draw<0 || draw>=1)throw new Error('Selection randomness is unavailable.');
+    const weight=1+(oldest ? ages[index]/oldest : 0);
+    return {node,key:-Math.log1p(-draw)/weight};
+  }).sort((a,b)=>a.key-b.key).map(item=>item.node);
 }
 
 export function eligibleAt(state, node) {
@@ -66,16 +71,13 @@ export function eligibleAt(state, node) {
 }
 
 export function candidates(nodes, state, now = Date.now()) {
-  const eligible = nodes.filter(n => eligibleAt(state,n)<=now);
-  const deferred = n => matches(state.entries[n.id], n) && state.entries[n.id].disposition === 'later';
-  const later = eligible.filter(deferred).sort((a,b)=>state.entries[a.id].at-state.entries[b.id].at || a.id.localeCompare(b.id));
-  return [...interleave(eligible.filter(n => !deferred(n))), ...later];
+  return nodes.filter(n => eligibleAt(state,n)<=now);
 }
 
-export function startSession(state, nodes, now = Date.now()) {
+export function startSession(state, nodes, now = Date.now(), random = Math.random) {
   if (state.session) return state;
   const next = structuredClone(state);
-  const selected = candidates(nodes, state, now).slice(0, state.batchSize ?? nodes.length);
+  const selected = randomOrder(candidates(nodes, state, now),now,random).slice(0, state.batchSize ?? nodes.length);
   if (!selected.length) return next;
   next.session = { started: now, queue: selected.map(n => ({ id:n.id, fingerprint:n.fingerprint })),
     cursor: 0, reviewed: 0, opened: 0, shown: [], counts: {reference:0, dismissed:0, later:0, removed:0}, calibration: state.batchSize === null };

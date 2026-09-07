@@ -1,4 +1,4 @@
-# Store listing material — 0.1.7
+# Store listing material — 0.1.8
 
 Draft, not submitted. Human usability and publisher checks remain.
 
@@ -11,6 +11,11 @@ Short description: Revisit forgotten bookmarks. Keep what matters, defer the und
 Saved for later doesn't have to mean forgotten forever.
 
 Backburner brings your existing Chrome bookmarks into a small review. Open a page, keep it as a reference, leave it for later, or confirm removal when it is no longer useful. Stop suggesting is also available without deleting the bookmark.
+
+New sessions mix eligible bookmarks at random, with a gentle preference for older
+recorded activity. Recent saves can surface too; there is no minimum age or year
+quota. Unfinished reviews retain their order. The interface follows your
+browser's light/dark preference without another setting.
 
 Keep as reference means no need to ask again for a year: 365 elapsed days from
 the saved decision, including existing kept records. Choosing Keep again starts

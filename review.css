@@ -9,3 +9,18 @@
 dialog{max-width:560px;width:calc(100% - 40px);border:1px solid var(--line);border-radius:12px;background:var(--paper);color:var(--ink);padding:28px}dialog::backdrop{background:#10251c88}#confirm-detail{white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px}.dialog-actions{display:flex;justify-content:flex-end;gap:12px;margin-top:24px}.dialog-actions button{padding:10px 18px;border:1px solid var(--line);border-radius:5px;background:#fff;color:var(--ink)}#confirm-yes{background:var(--green);color:white}#restore-folder{display:block;width:100%;padding:10px;margin-top:8px}.recovery-actions{display:grid;grid-template-columns:minmax(0,1fr) max-content;gap:15px;align-items:center;width:100%;max-width:18rem}.decision-row h3{margin:0 0 4px;font-size:16px}.summary-counts{flex-wrap:wrap}
 #decisions>.lede{margin-left:0;margin-right:0}#recovery-list .decision-row{display:grid;grid-template-columns:minmax(0,1fr) 18rem}
 @media(max-width:650px){#recovery-list .decision-row{grid-template-columns:minmax(0,1fr)}.decision-row{align-items:flex-start}}
+/* Keep button text and surfaces in the same palette during live theme changes. */
+button{transition-property:border-color}
+@media(prefers-color-scheme:dark){
+  :root{color-scheme:dark;--paper:#181f1c;--ink:#e6ece5;--muted:#afbbb2;--line:#718478;--accent:#ffad8f;--green:#a9d5b5}
+  .bookmark-card{background:#212b25;border-color:var(--line);box-shadow:0 9px 30px #00000030}
+  .primary,#confirm-yes{color:#17291e}
+  .primary:hover{background:#c5e6ce}
+  #domain-mark{background:#304036}
+  .card-bottom{border-color:var(--line)}
+  .open-button,.dialog-actions button{background:#29382e}
+  #confirm-yes{background:var(--green)}
+  .decision:hover{background:#26352d}
+  .notice{background:#342c23}
+  dialog::backdrop{background:#00000099}
+}
