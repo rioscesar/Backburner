@@ -1,6 +1,6 @@
 # Backburner privacy policy
 
-Applies to version 0.1.1. Maintained through [rioscesar/Backburner](https://github.com/rioscesar/Backburner).
+Applies to version 0.1.2. Maintained through [rioscesar/Backburner](https://github.com/rioscesar/Backburner).
 
 ## What stays on your device
 

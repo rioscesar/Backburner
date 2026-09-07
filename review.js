@@ -127,12 +127,37 @@ async function choose(disposition) {
   await renderReview();
 }
 
+async function closeFinishedReview() {
+  // This control is only available on the completion screen. Keep it inert if a
+  // stale event reaches it while a review is active.
+  if (state?.session || !state?.lastSession || screen !== 'summary') return;
+  clearMessage();
+  try {
+    const tab = await chrome.tabs.getCurrent();
+    if (!Number.isInteger(tab?.id)) throw new Error('Current review tab is unavailable.');
+    await chrome.tabs.remove(tab.id);
+  } catch {
+    message('We couldn’t close this tab. Try again or close it manually.',()=>run(closeFinishedReview),'Try again');
+  }
+}
+
+async function startReview() {
+  clearMessage();
+  await refreshNodes();
+  await save(s=>startSession(s,nodes));
+  await renderReview();
+}
+
 $('welcome-start').addEventListener('click',()=>run(async()=>{
-  clearMessage();await save(s=>{s.onboarded=true;return s;});await refreshNodes();await save(s=>startSession(s,nodes));await renderReview();
+  clearMessage();await save(s=>{s.onboarded=true;return s;});await startReview();
 }));
-$('start').addEventListener('click',()=>run(async()=>{clearMessage();await refreshNodes();await save(s=>startSession(s,nodes));await renderReview();}));
+$('start').addEventListener('click',()=>run(startReview));
 $('finish').addEventListener('click',()=>run(async()=>{clearMessage();await save(finish);renderSummary();}));
-$('done').addEventListener('click',()=>run(async()=>{clearMessage();await refreshNodes();renderHome();}));
+$('done').addEventListener('click',()=>run(closeFinishedReview));
+$('review-more').addEventListener('click',()=>run(async()=>{
+  if (state?.session || !state?.lastSession || screen !== 'summary') return;
+  await startReview();
+}));
 $('keep').addEventListener('click',()=>run(()=>choose('reference')));
 $('later').addEventListener('click',()=>run(()=>choose('later')));
 $('dismiss').addEventListener('click',()=>run(()=>choose('dismissed')));

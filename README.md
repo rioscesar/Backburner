@@ -6,7 +6,7 @@ Backburner brings existing Chrome bookmarks into a small review. Open something 
 
 ![Backburner review](release/screenshot-review.png)
 
-## Status: developer preview 0.1.1
+## Status: developer preview 0.1.2
 
 This is a working extension candidate, not a Chrome Web Store release. Public launch still needs founder session-size calibration, a newcomer walkthrough, and store submission/review. The first preview session learns its size when you finish; that is not yet the final public default.
 
@@ -27,7 +27,7 @@ On Windows, `npm run package` creates `dist/backburner.zip` and extracts its exa
 - **Remove bookmark:** confirm one native bookmark's removal. Chrome may sync the change to other devices.
 - **Stop suggesting instead:** a secondary action that retains the Chrome bookmark.
 
-The completion screen reports factual action counts. It asks no survey questions and adds no feedback collection or adaptive behavior.
+The completion screen reports factual action counts. **All done** closes the current Backburner tab; saved decisions and recovery copies remain available when you reopen it. **Review more bookmarks** starts another session in the same tab. It asks no survey questions and adds no feedback collection or adaptive behavior.
 
 ## Recovery has limits
 
