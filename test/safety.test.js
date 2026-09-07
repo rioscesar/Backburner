@@ -186,6 +186,27 @@ test('root and unavailable folder metadata replace the previous context rather t
   assert.equal(h.elements.get('folder-ancestors').textContent,'');
 });
 
+test('forget copy warns about permanent recovery loss, respects cancel, and gives focused feedback',async()=>{
+  const h=await completionHarness();
+  await h.evaluate(`save(asyncState=>{
+    asyncState.recovery['11111111-1111-4111-8111-111111111111']={id:'1',parentId:'2',index:0,
+      title:'Synthetic recovery',url:'https://example.com/recovery',fingerprint:'a'.repeat(64),
+      at:1,status:'removed',counted:true};
+    return asyncState;
+  })`);
+  await h.evaluate("confirmAction=async(title,detail)=>{globalThis.confirmDetail=detail;return {accepted:false};};renderRecovery()");
+  const before=h.read();
+  const forget=()=>h.elements.get('recovery-list').children[0].children[1].children[1].handlers.click();
+  await forget();assert.deepEqual(h.read(),before);
+  assert.match(h.evaluate('confirmDetail'),/permanently erases.*no longer be able to restore/s);
+  assert.doesNotMatch(h.evaluate('confirmDetail'),/does not change Chrome bookmarks/);
+  await h.evaluate("confirmAction=async()=>({accepted:true})");
+  await forget();
+  assert.equal(Object.keys(h.read().recovery).length,0);
+  assert.equal(h.elements.get('notice').children[0].textContent,'Recovery copy forgotten.');
+  assert.deepEqual(h.read().entries,before.entries);
+});
+
 test('reminder handoff preserves an unfinished review until explicit switch and uses the selected item',async()=>{
   const h=await completionHarness([1,2].map(id=>({id:String(id),url:`https://example.com/${id}`,title:`Synthetic ${id}`})));
   await h.evaluate('save(s=>startSession(s,nodes))');

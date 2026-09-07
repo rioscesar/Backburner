@@ -387,8 +387,8 @@ function renderRecovery() {
     const actions=document.createElement('div');actions.className='recovery-actions';
     const restore=document.createElement('button');restore.className='open-button';restore.textContent=r.status==='restoring'?'Check restore':'Restore';restore.addEventListener('click',()=>run(()=>restoreRecovery(key)));
     const forget=document.createElement('button');forget.className='text-button';forget.textContent='Forget recovery copy';forget.addEventListener('click',()=>run(async()=>{
-      const answer=await confirmAction('Forget this recovery copy?',`${r.title}\n${r.url}\n\nThis permanently erases Backburner’s local recovery copy. It does not change Chrome bookmarks. If the bookmark is removed, Backburner will no longer be able to restore it.`,'Forget recovery copy');
-      if(answer.accepted){await removal.forget(key,true);await renderDecisions();message('Recovery copy forgotten. No Chrome bookmark was changed.');}
+      const answer=await confirmAction('Forget this recovery copy?',`${r.title}\n${r.url}\n\nThis permanently erases Backburner’s local recovery copy. If the bookmark is removed, Backburner will no longer be able to restore it.`,'Forget recovery copy');
+      if(answer.accepted){await removal.forget(key,true);await renderDecisions();message('Recovery copy forgotten.');}
     }));actions.append(restore,forget);row.append(copy,actions);list.append(row);
   }
 }

@@ -1,6 +1,11 @@
-# Release verification — 0.1.5
+# Release verification — 0.1.6
 
 Use synthetic bookmarks in a clean profile. No account needed.
+
+Forget confirmation must explain permanent loss of the recovery copy and the
+resulting inability to restore, without the unrelated "does not change Chrome
+bookmarks" sentence. Cancel retains the copy; confirmed completion reports only
+"Recovery copy forgotten." and clears only the selected copy.
 
 On Review decisions, verify the introduction shares the title's left edge.
 Use recovery rows with different title/URL lengths and Restore/Check restore
