@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {existsSync,readFileSync} from 'node:fs';
-const required=['manifest.json','background.js','review.html','review.css','review.js','domain.js','store.js','removal.js','icons/icon16.png','icons/icon32.png','icons/icon48.png','icons/icon128.png'].sort();
+const required=['manifest.json','background.js','review.html','review.css','review.js','domain.js','store.js','removal.js','reminders.js','icons/icon16.png','icons/icon32.png','icons/icon48.png','icons/icon128.png'].sort();
 function check(names){return JSON.stringify([...names].sort())===JSON.stringify(required);}
 function namesFromZip(buffer) {
   const names=[];
@@ -16,5 +16,6 @@ test('release ZIP contains only runtime files and manifest at root',()=>{
   assert.ok(existsSync(zip),'Run npm run package before testing.');
   assert.equal(check(namesFromZip(readFileSync(zip))),true);
   const manifest=JSON.parse(readFileSync(new URL('../manifest.json',import.meta.url),'utf8'));
+  assert.equal(manifest.version,JSON.parse(readFileSync(new URL('../package.json',import.meta.url),'utf8')).version);
   for(const icon of Object.values(manifest.icons))assert.ok(required.includes(icon));
 });

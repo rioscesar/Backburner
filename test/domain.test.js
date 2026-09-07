@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {emptyState,safeUrl,flatten,candidates,startSession,markShown,decide,finish,undo,validateState} from '../domain.js';
+import {emptyState,safeUrl,flatten,candidates,startSession,startReminderSession,eligibleAt,LATER_DELAY,markShown,decide,finish,undo,validateState} from '../domain.js';
 import {node,fp,otherFp} from './fixtures.js';
 
 test('URL controls accept web destinations and reject executable/local/credential URLs',()=>{
@@ -18,15 +18,19 @@ test('selection interleaves unknown dates, orders dated records and does not equ
 test('all decisions preserve input nodes; suppression, undo, and changed URL fingerprint controls',()=>{
   for(const disposition of ['reference','dismissed','later']) {
     const n=node(), before=structuredClone(n);let s=startSession(emptyState(),[n]);s=decide(s,n,disposition);
-    assert.deepEqual(n,before);assert.equal(candidates([n],s).length,disposition==='later'?1:0);
+    assert.deepEqual(n,before);assert.equal(candidates([n],s).length,0);
+    assert.equal(candidates([n],s,Date.now()+LATER_DELAY).length,disposition==='later'?1:0);
     assert.equal(candidates([node('1',{fingerprint:otherFp})],s).length,1);
     assert.equal(candidates([n],undo(s,'1')).length,1);
   }
 });
 test('deferred entries come after unseen ones and repeat count increases only for matching URL',()=>{
   const a=node(),b=node('2');let s=startSession(emptyState(),[a]);s=finish(decide(s,a,'later'));
-  assert.deepEqual(candidates([a,b],s).map(n=>n.id),['2','1']);
-  s=decide(startSession(s,[a]),a,'later');assert.equal(s.entries['1'].deferrals,2);
+  const due=s.entries['1'].at+LATER_DELAY;
+  assert.deepEqual(candidates([a,b],s,due-1).map(n=>n.id),['2']);
+  assert.deepEqual(candidates([a,b],s,due).map(n=>n.id),['2','1']);
+  s=decide(startSession(s,[a],due),a,'later',due);assert.equal(s.entries['1'].deferrals,2);
+  assert.equal(eligibleAt(s,a),due+LATER_DELAY);
 });
 test('session freezes its queue, records impressions once, and learns size only on finish',()=>{
   const a=node(),b=node('2');let s=startSession(emptyState(),[a,b]);
@@ -45,8 +49,35 @@ test('stale decision and unknown action controls fail without changing state',()
 test('repeated deferral rotates behind older deferred items instead of starving them',()=>{
   const a=node(),b=node('2');let s=startSession(emptyState(),[a,b]);
   s=decide(s,a,'later',100);s=decide(s,b,'later',200);s=finish(s);s.batchSize=1;
-  s=decide(startSession(s,[a,b]),a,'later',300);s=finish(s);
-  assert.deepEqual(candidates([a,b],s).map(n=>n.id),['2','1']);
+  s=decide(startSession(s,[a,b],200+LATER_DELAY),a,'later',300+LATER_DELAY);s=finish(s);
+  assert.deepEqual(candidates([a,b],s,300+2*LATER_DELAY).map(n=>n.id),['2','1']);
+});
+
+test('Later is a fourteen-day not-before policy across restart and manual review-more sessions',()=>{
+  const n=node(),at=1000;
+  let s=finish(decide(startSession(emptyState(),[n],at),n,'later',at),at);
+  s=validateState(JSON.parse(JSON.stringify(s)));
+  assert.equal(startSession(s,[n],at+LATER_DELAY-1).session,null);
+  assert.equal(startSession(s,[n],at+LATER_DELAY).session.queue[0].id,n.id);
+  assert.equal(candidates([node('1',{fingerprint:otherFp})],s,at+1).length,1);
+});
+
+test('targeted reminder reviews preserve state and batch calibration, and never overwrite a session',()=>{
+  const n=node(),s=emptyState();s.onboarded=true;
+  const next=startReminderSession(s,n,1000);
+  assert.equal(next.session.calibration,false);assert.equal(next.session.queue.length,1);
+  assert.equal(next.session.reminder,true);assert.doesNotThrow(()=>validateState(next));
+  assert.throws(()=>validateState({...next,session:{...next.session,calibration:true}}));
+  assert.throws(()=>validateState({...next,session:{...next.session,reminder:'yes'}}));
+  assert.equal(finish(decide(next,n,'reference',1001),1002).batchSize,null);
+  assert.deepEqual(s,emptyStateWithOnboarding());
+  assert.throws(()=>startReminderSession(next,n,1001),/existing review/);
+  const later=finish(decide(next,n,'later',1001),1002);
+  assert.throws(()=>startReminderSession(later,n,1002),/no longer waiting/);
+  const resolved=finish(decide(next,n,'reference',1001),1002);
+  assert.throws(()=>startReminderSession(resolved,n,2000),/no longer waiting/);
+  assert.throws(()=>startReminderSession({...s,recovery:{copy:{id:n.id}}},n,2000),/no longer waiting/);
+  function emptyStateWithOnboarding(){return {...emptyState(),onboarded:true};}
 });
 test('schema checker accepts real transitions and rejects damaged/future state',()=>{
   let s=decide(startSession(emptyState(),[node()]),node(),'reference');

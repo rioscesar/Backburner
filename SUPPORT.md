@@ -21,3 +21,11 @@ These leave Chrome intact. Undo them in Review decisions to make a bookmark elig
 ## Saving errors
 
 If backing up fails, removal is not attempted. If a native operation succeeded but its final save failed, it may need recovery inspection. Read the pending state; do not assume an error means nothing changed.
+
+## Reminders and Later
+
+Reminders are opt-in through the welcome screen or Privacy & help. Without permission, manual review still works. After enabling, the first opportunity is no earlier than one week later. There is at most one attempt per seven elapsed days, during 09:00-18:00 local time. Later is not eligible again for fourteen elapsed days, including in Review more; it then shares future reminder slots with other eligible bookmarks. Ignored reminders do not escalate.
+
+If nothing appears, check reminder status in Privacy & help, Chrome notification permission and OS notification/Focus/Do Not Disturb settings. Chrome must be able to run; a sleeping device or fully quit browser cannot guarantee delivery. Restart repairs the schedule, not missed notifications in a burst. Delivery interrupted around a storage/API boundary may skip a slot to avoid duplicates. A granted permission or successful notification API call does not establish that the OS displayed it.
+
+Turning reminders off cancels future reminders without clearing decisions or recovery. Do not uninstall, clear local data or toggle settings repeatedly as a notification retry strategy. Notification content contains no bookmark titles/URLs; clicking opens the selected item in Backburner. If it changed or was resolved, Backburner reports that instead of substituting another item. An unfinished session requires your explicit choice before switching.

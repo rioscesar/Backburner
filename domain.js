@@ -1,5 +1,6 @@
 // Set only after observed founder calibration. A null default is a preview gate.
 export const DEFAULT_BATCH_SIZE = null;
+export const LATER_DELAY = 14 * 24 * 60 * 60 * 1000;
 export const DISPOSITIONS = ['reference', 'dismissed', 'later'];
 export const emptyState = () => ({ version: 2, onboarded: false, batchSize: DEFAULT_BATCH_SIZE,
   entries: {}, recovery: {}, session: null, lastSession: null, totals: { shown: 0, opened: 0, reference: 0, dismissed: 0, later: 0, removed: 0, sessions: 0 } });
@@ -36,8 +37,14 @@ function interleave(nodes) {
   return result;
 }
 
-export function candidates(nodes, state) {
-  const eligible = nodes.filter(n => !matches(state.entries[n.id], n) || state.entries[n.id].disposition === 'later');
+export function eligibleAt(state, node) {
+  const entry=state.entries[node.id];
+  if(!matches(entry,node))return 0;
+  return entry.disposition==='later' ? entry.at+LATER_DELAY : Infinity;
+}
+
+export function candidates(nodes, state, now = Date.now()) {
+  const eligible = nodes.filter(n => eligibleAt(state,n)<=now);
   const deferred = n => matches(state.entries[n.id], n) && state.entries[n.id].disposition === 'later';
   const later = eligible.filter(deferred).sort((a,b)=>state.entries[a.id].at-state.entries[b.id].at || a.id.localeCompare(b.id));
   return [...interleave(eligible.filter(n => !deferred(n))), ...later];
@@ -46,10 +53,21 @@ export function candidates(nodes, state) {
 export function startSession(state, nodes, now = Date.now()) {
   if (state.session) return state;
   const next = structuredClone(state);
-  const selected = candidates(nodes, state).slice(0, state.batchSize ?? nodes.length);
+  const selected = candidates(nodes, state, now).slice(0, state.batchSize ?? nodes.length);
   if (!selected.length) return next;
   next.session = { started: now, queue: selected.map(n => ({ id:n.id, fingerprint:n.fingerprint })),
     cursor: 0, reviewed: 0, opened: 0, shown: [], counts: {reference:0, dismissed:0, later:0, removed:0}, calibration: state.batchSize === null };
+  return next;
+}
+
+export function startReminderSession(state, node, now = Date.now()) {
+  if(state.session)throw new Error('Finish or resume the existing review before starting a reminder.');
+  if(!safeUrl(node.url) || eligibleAt(state,node)>now || Object.values(state.recovery).some(r=>r.id===node.id)) {
+    throw new Error('This bookmark is no longer waiting for a reminder.');
+  }
+  const next=structuredClone(state);
+  next.session={started:now,queue:[{id:node.id,fingerprint:node.fingerprint}],cursor:0,
+    reviewed:0,opened:0,shown:[],counts:{reference:0,dismissed:0,later:0,removed:0},calibration:false,reminder:true};
   return next;
 }
 
@@ -100,6 +118,7 @@ export function validateState(state, legacy = false) {
   for (const key of Object.keys(emptyState().totals).filter(k=>!legacy || k!=='removed')) if (!integer(state.totals?.[key])) throw new Error('Saved counts could not be read.');
   if (state.session) {
     const s = state.session;
+    if(s.reminder!==undefined && (s.reminder!==true || s.calibration || s.queue?.length!==1))throw new Error('Saved reminder session could not be read.');
     if (!Array.isArray(s.queue) || !integer(s.cursor) || s.cursor > s.queue.length || !integer(s.started) || !integer(s.reviewed) || !integer(s.opened) || typeof s.calibration !== 'boolean' || !Array.isArray(s.shown) || s.shown.some(id => typeof id !== 'string') ||
       s.queue.some(n => !/^\d+$/.test(n.id) || !fingerprint(n.fingerprint)) || new Set(s.queue.map(n=>n.id)).size !== s.queue.length ||
       [...DISPOSITIONS,...(legacy?[]:['removed'])].some(d => !integer(s.counts?.[d]))) throw new Error('Saved session could not be read. Nothing has been changed.');

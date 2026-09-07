@@ -10,8 +10,9 @@ import {createRemoval} from '../removal.js';
 
 function findings(manifest, source, recovery=false) {
   const hits=[];
-  if(JSON.stringify([...(manifest.permissions??[])].sort())!==JSON.stringify(['bookmarks','storage']))hits.push('permissions');
-  for(const field of ['host_permissions','optional_host_permissions','optional_permissions','content_scripts','externally_connectable','web_accessible_resources'])if(manifest[field]?.length || (manifest[field] && !Array.isArray(manifest[field])))hits.push(field);
+  if(JSON.stringify([...(manifest.permissions??[])].sort())!==JSON.stringify(['alarms','bookmarks','storage']))hits.push('permissions');
+  if(JSON.stringify([...(manifest.optional_permissions??[])].sort())!==JSON.stringify(['notifications']))hits.push('optional permissions');
+  for(const field of ['host_permissions','optional_host_permissions','content_scripts','externally_connectable','web_accessible_resources','chrome_url_overrides'])if(manifest[field]?.length || (manifest[field] && !Array.isArray(manifest[field])))hits.push(field);
   if(/chrome\.bookmarks\s*\.\s*(create|update|move|remove|removeTree)\s*\(/.test(source) || (!recovery && /bookmarks\.(remove|create)\(/.test(source)))hits.push('bookmark mutation');
   if(/\b(fetch|XMLHttpRequest|WebSocket|EventSource|sendBeacon)\s*\(/.test(source))hits.push('network');
   if(/\.innerHTML\s*=|\.outerHTML\s*=|insertAdjacentHTML\s*\(|\beval\s*\(/.test(source))hits.push('unsafe DOM');
@@ -21,10 +22,13 @@ const manifest=JSON.parse(readFileSync(new URL('../manifest.json',import.meta.ur
 test('safety controls catch broadened permissions, mutations, network and unsafe DOM',()=>{
   assert.deepEqual(findings(manifest,'chrome.bookmarks.getTree(); title.textContent = text;'),[]);
   assert.ok(findings({...manifest,permissions:['bookmarks','storage','history']},'').length);
+  assert.ok(findings({...manifest,permissions:['alarms','bookmarks','storage','notifications'],optional_permissions:[]},'').length);
+  assert.ok(findings({...manifest,optional_permissions:['notifications','history']},'').length);
+  assert.ok(findings({...manifest,chrome_url_overrides:{newtab:'review.html'}},'').length);
   for(const bad of ['chrome.bookmarks.remove(id)','fetch(url)','element.innerHTML = title'])assert.ok(findings(manifest,bad).length);
 });
 test('review UI stays nonmutating; runtime remains local-only and safely rendered',()=>{
-  const source=['background.js','review.js','store.js','domain.js'].map(f=>readFileSync(new URL(`../${f}`,import.meta.url),'utf8')).join('\n');
+  const source=['background.js','review.js','store.js','domain.js','reminders.js'].map(f=>readFileSync(new URL(`../${f}`,import.meta.url),'utf8')).join('\n');
   assert.deepEqual(findings(manifest,source),[]);
   assert.equal(manifest.manifest_version,3);
   assert.match(manifest.content_security_policy.extension_pages,/connect-src 'none'/);
@@ -74,11 +78,15 @@ async function completionHarness(nodes=[]) {
   const initial=domain.emptyState();initial.onboarded=true;initial.batchSize=2;
   initial.lastSession={started:1,ended:2,reviewed:0,opened:0,counts:{reference:0,dismissed:0,later:0,removed:0}};
   let saved={[STATE_KEY]:initial}, failSave=false;
+  let reminder={enabled:false,status:'off',permission:false,nextAt:null,pending:null};
   const closed=[], tabs={getCurrent:async()=>({id:7}),remove:async id=>{closed.push(id);}};
-  const context=createContext({...domain,createStore,fingerprintUrl,createRemoval,structuredClone,URL,Intl,
+  const context=createContext({...domain,createStore,fingerprintUrl,createRemoval,structuredClone,URL,Intl,queueMicrotask,
     document:{getElementById:id=>{assert.ok(elements.has(id),`Missing control: ${id}`);return elements.get(id);},
       querySelectorAll:()=>buttons,createElement:element,createTextNode:text=>({textContent:text})},
-    chrome:{tabs,bookmarks:{getTree:async()=>structuredClone(nodes)},storage:{local:{
+    chrome:{tabs,permissions:{request:async()=>false},runtime:{sendMessage:async request=>{
+      if(request.type==='reminders-ack')reminder.pending=null;
+      return {ok:true,value:structuredClone(reminder)};
+    }},bookmarks:{getTree:async()=>structuredClone(nodes)},storage:{local:{
       get:async()=>structuredClone(saved),set:async value=>{if(failSave)throw Error('Synthetic storage failure');saved=structuredClone(value);}
     }}},
     navigator:{locks:{request:async()=>{}}}
@@ -87,7 +95,8 @@ async function completionHarness(nodes=[]) {
   runInContext(source,context);
   await runInContext('(async()=>{state=await store.load();await refreshNodes();renderSummary();})()',context);
   return {elements,tabs,closed,click:id=>elements.get(id).handlers.click(),read:()=>structuredClone(saved[STATE_KEY]),
-    evaluate:code=>runInContext(code,context),failSave:value=>{failSave=value;}};
+    evaluate:code=>runInContext(code,context),failSave:value=>{failSave=value;},
+    setReminder:value=>{reminder=structuredClone(value);},reminder:()=>structuredClone(reminder)};
 }
 
 test('All done closes only the current tab without changing saved state; stale controls are inert',async()=>{
@@ -141,4 +150,66 @@ test('Review more shows the existing empty state and preserves completion on sav
   assert.ok(h.elements.get('notice').children.length);
   h.failSave(false);await h.click('review-more');
   assert.equal(h.elements.get('review').hidden,false);assert.equal(h.read().session.queue.length,1);
+});
+
+test('reminder handoff preserves an unfinished review until explicit switch and uses the selected item',async()=>{
+  const h=await completionHarness([1,2].map(id=>({id:String(id),url:`https://example.com/${id}`,title:`Synthetic ${id}`})));
+  await h.evaluate('save(s=>startSession(s,nodes))');
+  const before=h.read(),target=await h.evaluate('nodes[1]');
+  h.setReminder({enabled:true,status:'pending',permission:true,nextAt:null,pending:{id:target.id,fingerprint:target.fingerprint,attemptAt:1000,pool:'other',clicked:true}});
+  await h.evaluate('runReminder(showReminder)');
+  assert.deepEqual(h.read(),before);assert.equal(h.elements.get('reminder-handoff').hidden,false);
+  assert.equal(h.elements.get('reminder-title').textContent,'Synthetic 2');
+  await h.click('reminder-switch');
+  assert.equal(h.read().session.queue[0].id,'2');assert.equal(h.read().session.queue.length,1);
+  assert.equal(h.read().session.calibration,false);assert.equal(h.read().batchSize,before.batchSize);
+  assert.equal(h.read().lastSession.reviewed,0);assert.equal(h.reminder().pending,null);
+  assert.deepEqual(h.closed,[]);
+});
+
+test('reminder resume, stale target and save failure cannot erase the current session',async()=>{
+  for(const mode of ['resume','stale','failure']) {
+    const h=await completionHarness([1,2].map(id=>({id:String(id),url:`https://example.com/${id}`,title:'Synthetic'})));
+    await h.evaluate('save(s=>startSession(s,nodes))');
+    const before=h.read(),target=await h.evaluate('nodes[1]');
+    h.setReminder({enabled:true,status:'pending',permission:true,nextAt:null,pending:{id:target.id,fingerprint:mode==='stale'?'b'.repeat(64):target.fingerprint,attemptAt:1000,pool:'other',clicked:true}});
+    await h.evaluate('runReminder(showReminder)');
+    if(mode==='resume')await h.click('reminder-resume');
+    if(mode==='failure'){h.failSave(true);await h.click('reminder-switch');}
+    const after=h.read();
+    assert.deepEqual(after.session.queue,before.session.queue);assert.equal(after.session.cursor,before.session.cursor);
+    assert.deepEqual(after.entries,before.entries);assert.deepEqual(after.recovery,before.recovery);
+    assert.deepEqual(after.lastSession,before.lastSession);
+    if(mode==='failure')assert.ok(h.reminder().pending);
+    else assert.equal(h.reminder().pending,null);
+  }
+});
+
+test('manual review never requests notification permission; an explicit denial preserves saved state',async()=>{
+  const h=await completionHarness([{id:'1',url:'https://example.com/1',title:'Synthetic'}]);
+  h.evaluate('globalThis.permissionCalls=0;chrome.permissions.request=async()=>{permissionCalls++;return false;}');
+  await h.click('review-more');assert.equal(h.evaluate('permissionCalls'),0);
+  const before=h.read();
+  await h.click('reminders-enable');
+  assert.equal(h.evaluate('permissionCalls'),1);assert.deepEqual(h.read(),before);
+  assert.equal(h.reminder().enabled,false);
+  assert.match(h.elements.get('notice').children[0].textContent,/not granted/);
+});
+
+test('changed destinations end a reminder rather than substitute a URL; ordinary review retains its refresh behavior',async()=>{
+  for(const reminder of [true,false]) {
+    const raw=[{id:'1',title:'Synthetic',url:'https://example.com/original'}];
+    const h=await completionHarness(raw);
+    await h.evaluate(reminder?'save(s=>startReminderSession(s,nodes[0]))':'save(s=>startSession(s,nodes))');
+    raw[0].url='https://example.com/changed';
+    await h.evaluate('renderReview()');
+    if(reminder) {
+      assert.equal(h.read().session,null);
+      assert.equal(h.read().lastSession.reviewed,0);
+      assert.match(h.elements.get('notice').children[0].textContent,/without substituting/);
+    } else {
+      assert.equal(h.read().session.queue[0].fingerprint,await fingerprintUrl(raw[0].url));
+      assert.equal(h.elements.get('review').hidden,false);
+    }
+  }
 });

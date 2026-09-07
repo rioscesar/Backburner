@@ -1,4 +1,4 @@
-import { flatten, candidates, activityDate, safeUrl, matches, startSession, markShown, decide, finish, undo, DEFAULT_BATCH_SIZE } from './domain.js';
+import { flatten, candidates, activityDate, safeUrl, matches, eligibleAt, startSession, startReminderSession, markShown, decide, finish, undo, DEFAULT_BATCH_SIZE } from './domain.js';
 import { createStore, fingerprintUrl } from './store.js';
 import { createRemoval } from './removal.js';
 
@@ -6,6 +6,7 @@ const $ = id => document.getElementById(id);
 const store = createStore(chrome.storage.local);
 const removal=createRemoval({bookmarks:chrome.bookmarks,read:()=>state,write:save});
 let state, nodes = [], current, busy = false, screen = 'loading', returnScreen = 'home', decisionLimit = 30;
+let reminderTarget=null, reminderRequested=false;
 const sections = ['loading','welcome','home','review','summary','decisions','help','locked','fatal'];
 
 function show(name) {
@@ -21,7 +22,13 @@ async function run(action) {
   busy = true; document.querySelectorAll('button').forEach(b => {b.disabled=true;});
   try { await action(); }
   catch { message('That didn’t finish. If you were removing or restoring, check Removed bookmarks in Review decisions before retrying. Recovery copies are kept; do not uninstall to troubleshoot.',()=>run(renderDecisions),'Check recovery'); }
-  finally { busy=false; document.querySelectorAll('button').forEach(b => {b.disabled=false;}); }
+  finally {
+    busy=false; document.querySelectorAll('button').forEach(b => {b.disabled=false;});
+    if(reminderRequested && state) {
+      reminderRequested=false;
+      queueMicrotask(()=>runReminder(showReminder));
+    }
+  }
 }
 async function save(transform) { state = await store.update(transform); }
 async function refreshNodes() {
@@ -41,14 +48,20 @@ async function renderReview() {
   const byId = new Map(nodes.map(n => [n.id,n]));
   const queue = state.session.queue;
   let cursor=state.session.cursor;
-  while(cursor<queue.length && !byId.has(queue[cursor].id)) cursor++;
+  while(cursor<queue.length && (!byId.has(queue[cursor].id) || eligibleAt(state,byId.get(queue[cursor].id))>Date.now())) cursor++;
   if(cursor !== state.session.cursor) {
     await save(s => {s.session.cursor=cursor;return s;});
-    message('A bookmark is no longer available. We skipped it.');
+    message('A bookmark is no longer ready for review. We skipped it.');
   }
   if(cursor >= queue.length) {await save(finish);return renderSummary();}
   current=byId.get(queue[cursor].id);
   if(current.fingerprint !== queue[cursor].fingerprint) {
+    if(state.session.reminder) {
+      await save(finish);
+      renderSummary();
+      message('This reminded bookmark changed its address. The reminder ended without substituting another destination.');
+      return;
+    }
     await save(s => {s.session.queue[cursor].fingerprint=current.fingerprint;return s;});
     message('This bookmark’s address changed in Chrome. Take a fresh look before deciding.');
   }
@@ -71,7 +84,7 @@ async function renderReview() {
 function renderHome() {
   show('home'); const available=candidates(nodes,state).length;
   $('start').hidden=!available;
-  $('home-copy').textContent=available ? `${available.toLocaleString()} ${available===1?'bookmark is':'bookmarks are'} ready for another look. ${state.batchSize ? `Up to ${state.batchSize} in your next session.` : 'Finish your first look whenever you like.'}` : nodes.length ? 'Nothing waiting for your attention. Come back after saving something new, or undo a choice in Review decisions.' : 'No web bookmarks to revisit yet. Save a page in Chrome, then come back. Folders and non-web links aren’t included.';
+  $('home-copy').textContent=available ? `${available.toLocaleString()} ${available===1?'bookmark is':'bookmarks are'} ready for another look. ${state.batchSize ? `Up to ${state.batchSize} in your next session.` : 'Finish your first look whenever you like.'}` : nodes.length ? 'Nothing ready for review now. Later bookmarks wait at least 14 days. You can check reminder settings in Privacy & help or undo a choice in Review decisions.' : 'No web bookmarks to revisit yet. Save a page in Chrome, then come back. Folders and non-web links aren’t included.';
 }
 
 function renderSummary() {
@@ -123,7 +136,7 @@ async function revalidate() {
 async function choose(disposition) {
   clearMessage(); if(!await revalidate())return;
   await save(s=>decide(s,current,disposition));
-  message(disposition==='later'?'Saved for a later session.':'Decision saved. Your Chrome bookmark stays intact.');
+  message(disposition==='later'?'Saved for at least 14 days. Automatic reminders require enabled notifications; eligibility does not promise an immediate reminder.':'Decision saved. Your Chrome bookmark stays intact.');
   await renderReview();
 }
 
@@ -168,7 +181,7 @@ $('open').addEventListener('click',()=>run(async()=>{
   catch {message('The bookmark opened, but its open count couldn’t be saved. Your decision is still waiting here.');}
 }));
 $('decisions-nav').addEventListener('click',()=>run(async()=>{if(!state)return;returnScreen=screen;clearMessage();decisionLimit=30;await renderDecisions();}));
-$('help-nav').addEventListener('click',()=>{returnScreen=screen;show('help');});
+$('help-nav').addEventListener('click',()=>{returnScreen=screen;show('help');refreshReminders();});
 $('decisions-back').addEventListener('click',()=>run(returnToReview));
 $('help-back').addEventListener('click',()=>run(async()=>{if(!state)return show('fatal');await returnToReview();}));
 $('more-decisions').addEventListener('click',()=>run(async()=>{decisionLimit+=30;await renderDecisions();}));
@@ -182,6 +195,11 @@ navigator.locks.request('backburner-review-writer',{ifAvailable:true},async lock
     await chrome.storage.session.set({reviewTabId:tab.id});
     chrome.runtime.onMessage.addListener((request,sender,respond)=>{
       if(sender.id===chrome.runtime.id && request.type==='review-alive')respond({tabId:tab.id});
+      if(sender.id===chrome.runtime.id && request.type==='reminder-handoff') {
+        respond({ok:true});
+        if(busy || !state)reminderRequested=true;
+        else runReminder(showReminder);
+      }
     });
     state=await store.load();
     if(Object.keys(state.recovery).length)message('Recovery copies are available in Review decisions. Check any pending operation before removing another bookmark.');
@@ -193,9 +211,119 @@ navigator.locks.request('backburner-review-writer',{ifAvailable:true},async lock
     }
     $('calibration-note').hidden=DEFAULT_BATCH_SIZE!==null;
     if(!state.onboarded)show('welcome');else if(state.session)await renderReview();else renderHome();
+    await refreshReminders();
+    if(location.hash==='#reminder' || reminderRequested) {
+      reminderRequested=false;
+      await runReminder(showReminder);
+    }
   } catch { show('fatal'); }
   await new Promise(()=>{});
 }).catch(()=>show('fatal'));
+
+async function reminderRequest(type,details={}) {
+  const result=await chrome.runtime.sendMessage({type,...details});
+  if(!result?.ok)throw new Error(result?.error || 'Reminder service did not respond.');
+  return result.value;
+}
+function reminderStatus(text) {
+  $('reminders-status').textContent=text;
+  $('welcome-reminder-status').textContent=text;
+}
+function renderReminderStatus(snapshot) {
+  const enabled=snapshot.enabled;
+  $('reminders-enable').hidden=enabled && snapshot.permission;
+  $('welcome-reminders').hidden=enabled && snapshot.permission;
+  $('reminders-disable').hidden=!enabled;
+  if(!enabled)return reminderStatus('Reminders off - manual review only.');
+  if(!snapshot.permission)return reminderStatus('Reminders blocked by notification permission or settings. Manual review still works. Enable notifications here and check Chrome/OS notification settings.');
+  if(snapshot.status==='error' || snapshot.status==='uncertain')return reminderStatus('Reminder delivery could not be confirmed. No extra notification will bypass the weekly limit. Your saved decisions and recovery copies are kept.');
+  const next=snapshot.nextAt ? ` Next opportunity no earlier than ${new Date(snapshot.nextAt).toLocaleString()}.` : '';
+  reminderStatus(`Quiet reminders enabled: at most once per 7 days, between 09:00 and 18:00. Chrome or your operating system may delay or suppress them.${next}`);
+}
+async function refreshReminders() {
+  try {renderReminderStatus(await reminderRequest('reminders-status'));}
+  catch {reminderStatus('Reminder status could not be loaded. Manual review still works; open Privacy & help to try again.');}
+}
+function runReminder(action) {
+  return run(async()=>{
+    try {await action();}
+    catch {message('The reminder action did not finish. Saved decisions and recovery copies are kept. Try again from Privacy & help or the reminder.');}
+  });
+}
+function enableReminders() {
+  return runReminder(async()=>{
+    const granted=await chrome.permissions.request({permissions:['notifications']});
+    if(!granted) {
+      await refreshReminders();
+      message('Notification permission was not granted. You can keep reviewing manually; Later will not promise an automatic reminder.');
+      return;
+    }
+    renderReminderStatus(await reminderRequest('reminders-enable',{enabled:true}));
+  });
+}
+$('welcome-reminders').addEventListener('click',enableReminders);
+$('reminders-enable').addEventListener('click',enableReminders);
+$('reminders-disable').addEventListener('click',()=>runReminder(async()=>{
+  renderReminderStatus(await reminderRequest('reminders-enable',{enabled:false}));
+  reminderTarget=null;$('reminder-handoff').hidden=true;
+}));
+
+async function reminderNode(target) {
+  await refreshNodes();
+  const node=nodes.find(n=>n.id===target.id && n.fingerprint===target.fingerprint);
+  return node && eligibleAt(state,node)<=Date.now() && !Object.values(state.recovery).some(r=>r.id===node.id) ? node : null;
+}
+async function acknowledgeReminder(target) {
+  await reminderRequest('reminders-ack',{target:{id:target.id,fingerprint:target.fingerprint,attemptAt:target.attemptAt}});
+}
+async function startRemindedBookmark(target,replace=false) {
+  const node=await reminderNode(target);
+  if(!node || target.stale) {
+    await acknowledgeReminder(target);
+    reminderTarget=null;$('reminder-handoff').hidden=true;
+    message('This reminded bookmark is no longer waiting. Nothing was substituted or changed.');
+    return;
+  }
+  if(state.session && !replace)throw new Error('An unfinished session needs an explicit handoff.');
+  await save(s=>startReminderSession(s.session?finish(s):s,node));
+  reminderTarget=null;$('reminder-handoff').hidden=true;
+  await renderReview();
+  $('bookmark-title').focus();
+  await acknowledgeReminder(target);
+}
+async function showReminder() {
+  const snapshot=await reminderRequest('reminders-status');
+  renderReminderStatus(snapshot);
+  const target=snapshot.pending;
+  if(!snapshot.enabled || !target?.clicked) {
+    message('This reminder is no longer available. Your current review is unchanged.');
+    return;
+  }
+  const node=await reminderNode(target);
+  if(!node || target.stale)return startRemindedBookmark(target);
+  const queued=state.session?.queue[state.session.cursor];
+  if(queued?.id===node.id && queued.fingerprint===node.fingerprint) {
+    await renderReview();await acknowledgeReminder(target);
+    $('bookmark-title').focus();
+    message('Here is the bookmark from your reminder.');return;
+  }
+  if(!state.session)return startRemindedBookmark(target);
+  reminderTarget=target;
+  $('reminder-title').textContent=node.title || new URL(node.url).hostname;
+  $('reminder-url').textContent=node.url;
+  $('reminder-handoff').hidden=false;
+  $('reminder-title').focus();
+}
+$('reminder-resume').addEventListener('click',()=>runReminder(async()=>{
+  if(!reminderTarget)throw new Error('No reminder handoff is pending.');
+  await acknowledgeReminder(reminderTarget);
+  reminderTarget=null;$('reminder-handoff').hidden=true;
+  await returnToReview();
+}));
+$('reminder-switch').addEventListener('click',()=>runReminder(async()=>{
+  if(!reminderTarget)throw new Error('No reminder handoff is pending.');
+  await startRemindedBookmark(reminderTarget,true);
+}));
 
 function confirmAction(title, detail, action, folders=[], preferred) {
   const dialog=$('confirm-dialog');$('confirm-title').textContent=title;$('confirm-detail').textContent=detail;$('confirm-yes').textContent=action;
