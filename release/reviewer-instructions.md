@@ -1,6 +1,13 @@
-# Release verification — 0.1.4
+# Release verification — 0.1.5
 
 Use synthetic bookmarks in a clean profile. No account needed.
+
+On Review decisions, verify the introduction shares the title's left edge.
+Use recovery rows with different title/URL lengths and Restore/Check restore
+labels. Both actions must share stable columns and stay vertically centered
+together; narrow layouts place the pair beneath details without splitting it.
+Check desktop, both sides of the 650px breakpoint and 390px, including unclipped
+labels and no horizontal overflow. These are layout changes only.
 
 Verify current folder context below the review URL using nested native folders.
 Check direct root leaves, untitled/missing/cyclic ancestry with controlled fixtures,
