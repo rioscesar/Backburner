@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createStore,STATE_KEY,fingerprintUrl} from '../store.js';
+import {emptyState,eligibleAt,REFERENCE_DELAY} from '../domain.js';
 test('failed storage write does not advance memory and retry succeeds',async()=>{
   let fail=true, saved;
   const store=createStore({get:async()=>({}),set:async value=>{if(fail)throw Error('synthetic quota');saved=structuredClone(value);}});
@@ -21,6 +22,22 @@ test('invalid state is preserved and not silently reset',async()=>{
 test('URL identity is stable and detects changed destinations',async()=>{
   const a=await fingerprintUrl('https://example.com/a');assert.match(a,/^[a-f0-9]{64}$/);
   assert.equal(a,await fingerprintUrl('https://example.com/a'));assert.notEqual(a,await fingerprintUrl('https://example.com/b'));
+});
+test('existing and legacy kept records retain their original annual deadline on load',async()=>{
+  const n={id:'1',fingerprint:await fingerprintUrl('https://example.com/reference')};
+  for(const version of [1,2]) {
+    const original=emptyState(),at=Date.UTC(2024,1,29,10);original.version=version;
+    original.entries[n.id]={fingerprint:n.fingerprint,disposition:'reference',at,deferrals:0};
+    if(version===1){delete original.recovery;delete original.totals.removed;}
+    let saved={[STATE_KEY]:original},writes=0;
+    const storage={get:async()=>structuredClone(saved),set:async value=>{writes++;saved=structuredClone(value);}};
+    for(let reload=0;reload<2;reload++) {
+      const loaded=await createStore(storage).load();
+      assert.equal(loaded.entries[n.id].at,at);
+      assert.equal(eligibleAt(loaded,n),at+REFERENCE_DELAY);
+    }
+    assert.equal(writes,version===1?1:0);
+  }
 });
 test('v1 migration preserves unrelated state and deletes only obsolete survey fields',async()=>{
   const {emptyState}=await import('../domain.js');const original=emptyState();original.version=1;delete original.recovery;delete original.totals.removed;original.batchSize=4;

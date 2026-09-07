@@ -1,6 +1,13 @@
-# Release verification — 0.1.6
+# Release verification — 0.1.7
 
 Use synthetic bookmarks in a clean profile. No account needed.
+
+Keep as reference must exclude a matching bookmark until exactly 365 elapsed days
+after its saved decision, for both manual and proactive review. Test one millisecond
+before/at the boundary, persisted/older records, reload and repeated Keep. Stop
+suggesting must remain excluded beyond that date. Preserve existing Undo/URL
+identity behavior and all weekly/opt-in/window/recovery restrictions. Use synthetic
+clocks; do not claim a year of human observation from accelerated checks.
 
 Forget confirmation must explain permanent loss of the recovery copy and the
 resulting inability to restore, without the unrelated "does not change Chrome
@@ -45,6 +52,6 @@ With the review page closed, cross a due boundary in a synthetic clock harness a
 
 Verify notification title/message/identifier contain no bookmark title, URL or folder. Observe an actual headful OS notification and click separately from API/getAll/headless assertions. Record platform-specific suppression and Focus/Do Not Disturb limitations truthfully. Do not claim a notification was displayed, seen or useful from API success.
 
-Click reaches the selected live ID/fingerprint; resolved, missing, snoozed or changed targets must not substitute another bookmark. A reminder uses the existing decision UI and a non-calibrating one-item session. If another session is unfinished, neither arrival nor click may overwrite it: test resume, explicit switch and failed switch-save. Keep/Stop suggesting/Remove stop reminders; Later restarts fourteen days; ignored notifications neither resolve nor escalate. Reminder metadata must never overwrite the page-owned decision/recovery store.
+Click reaches the selected live ID/fingerprint; unavailable, missing, snoozed or changed targets must not substitute another bookmark. A reminder uses the existing decision UI and a non-calibrating one-item session. If another session is unfinished, neither arrival nor click may overwrite it: test resume, explicit switch and failed switch-save. Keep pauses reminders for 365 elapsed days; Stop suggesting has no expiry for a matching identity; Remove excludes the native bookmark. Later restarts fourteen days; ignored notifications neither resolve nor escalate. Reminder metadata must never overwrite the page-owned decision/recovery store.
 
 Native and automated clock advancement establish mechanism behavior only. A real Later-return observation takes at least fourteen days plus its weekly slot; do not compress policy or claim a one-week experiment proved it. Founder/newcomer usefulness, visible OS delivery and final store declarations remain distinct evidence.

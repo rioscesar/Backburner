@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { emptyState, LATER_DELAY } from '../domain.js';
+import { emptyState, LATER_DELAY, REFERENCE_DELAY } from '../domain.js';
 import { fingerprintUrl, STATE_KEY } from '../store.js';
 import { ALARM_NAME, createReminders, deliveryWindow, emptyReminderState, NOTIFICATION_ID, REMINDER_KEY, WEEK } from '../reminders.js';
 import { node } from './fixtures.js';
@@ -447,6 +447,40 @@ test('pending resolution clears the owned notification even without a click', as
   assert.equal((await h.controller.check()).status, 'stale');
   assert.equal(h.active[NOTIFICATION_ID], undefined);
   assert.equal(h.data[REMINDER_KEY].pending.clicked, false);
+});
+
+test('annual references reconstruct their deadline, return in the other pool, and reset on Keep',async()=>{
+  const h=await harness({tree:[node('1'),node('2')]});
+  await h.later('1',h.at);h.data[STATE_KEY].entries['1'].disposition='reference';
+  await h.later('2',h.at);h.data[STATE_KEY].entries['2'].disposition='dismissed';
+  const due=h.at+REFERENCE_DELAY,before=copy(h.data[STATE_KEY]);
+  await h.controller.setEnabled(true);
+  assert.equal(h.alarm.scheduledTime,deliveryWindow(due));
+  h.advance(due-1);h.reload();h.loseAlarm();await h.controller.check();
+  assert.equal(h.attempts().length,0);
+  assert.equal(h.alarm.scheduledTime,deliveryWindow(due));
+  assert.deepEqual(h.data[STATE_KEY],before);
+  h.advance(due);const offer=await h.controller.check();
+  assert.equal(offer.pending.id,'1');assert.equal(offer.pending.pool,'other');
+  assert.equal(h.attempts().length,1);
+  h.data[STATE_KEY].entries['1'].at=h.at;
+  assert.equal((await h.controller.check()).status,'stale');
+  assert.equal(h.alarm.scheduledTime,deliveryWindow(due+REFERENCE_DELAY));
+  h.data[STATE_KEY].entries['1'].disposition='dismissed';
+  h.advance(due+10*REFERENCE_DELAY);await h.controller.check();
+  assert.equal(h.attempts().length,1);assert.equal(h.alarm,undefined);
+});
+
+test('annual eligibility cannot bypass the weekly notification cap or explicit opt-in',async()=>{
+  const h=await harness(),at=h.at,due=at+REFERENCE_DELAY;
+  await h.later('1',at);h.data[STATE_KEY].entries['1'].disposition='reference';
+  h.advance(due);assert.equal((await h.controller.check()).status,'off');
+  assert.equal(h.attempts().length,0);
+  h.data[REMINDER_KEY]={...emptyReminderState(),enabled:true,enabledAt:at,lastAttemptAt:due-3*86400000};
+  const allowed=due+4*86400000;
+  await h.controller.check();assert.equal(h.attempts().length,0);
+  assert.equal(h.alarm.scheduledTime,deliveryWindow(allowed));
+  h.advance(allowed);await h.controller.check();assert.equal(h.attempts().length,1);
 });
 
 test('empty candidates clear alarm and resume on new bookmark event', async () => {

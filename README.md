@@ -6,7 +6,7 @@ Backburner brings existing Chrome bookmarks into a small review. Open something 
 
 ![Backburner review](release/screenshot-review.png)
 
-## Status: developer preview 0.1.6
+## Status: developer preview 0.1.7
 
 This is a working extension candidate, not a Chrome Web Store release. Public launch still needs founder session-size calibration, a newcomer walkthrough, and store submission/review. The first preview session learns its size when you finish; that is not yet the final public default.
 
@@ -24,10 +24,12 @@ On Windows, `npm run package` creates `dist/backburner.zip` and extracts its exa
 The review shows the bookmark's current Chrome folder path beneath its URL for context, not folder management. Long ancestry is shortened visually before the leaf folder; long leaf names wrap. The full path remains available to assistive technology and in its tooltip. Root-level bookmarks and unavailable ancestry are labeled explicitly. Paths are derived from Chrome, refreshed on review and checked before acting, never saved as new metadata or included in notifications.
 
 - **Open bookmark:** visit the page in another tab; the review waits here.
-- **Keep as reference:** leave the bookmark in Chrome and stop asking about it.
+- **Keep as reference:** leave it in Chrome and pause reviews/reminders for 365 elapsed days. Choosing Keep again starts another year.
 - **Later:** leave it in Chrome and exclude it from review for at least 14 elapsed days. Choosing Later again restarts that wait.
 - **Remove bookmark:** confirm one native bookmark's removal. Chrome may sync the change to other devices.
-- **Stop suggesting instead:** a secondary action that retains the Chrome bookmark.
+- **Stop suggesting instead:** retain the Chrome bookmark and stop reviews/reminders with no expiry.
+
+The annual rule also applies to existing kept records, measured from their saved decision time, not the update date. Undo or changing a bookmark's URL makes it eligible again; renaming or moving it does not reset the decision. Stop suggesting is the explicit permanent opt-out for that bookmark identity, not a guarantee against changes made outside Backburner.
 
 The completion screen reports factual action counts. **All done** closes the current Backburner tab; saved decisions and recovery copies remain available when you reopen it. **Review more bookmarks** starts another session in the same tab. It asks no survey questions and adds no feedback collection or adaptive behavior.
 
@@ -35,7 +37,7 @@ The completion screen reports factual action counts. **All done** closes the cur
 
 Enable reminders once on the welcome screen or in **Privacy & help**, accepting Chrome's optional notification permission. Manual review works without it. Reminders are off until enabled, with no repeated permission prompts.
 
-Backburner can offer one unresolved bookmark without a review page open: at most one notification attempt per seven elapsed days, between 09:00 and 18:00 local time. The first opportunity is after one week. Later becomes eligible after fourteen elapsed days; eligibility is not a promise of an immediate notification. Due Later items and other unresolved items share slots. Ignoring a reminder does not resolve it or escalate interruptions; that item waits at least fourteen days before another offer. These are initial product policies, not measured optima, and are not configurable schedules.
+Backburner can offer one eligible bookmark without a review page open: at most one notification attempt per seven elapsed days, between 09:00 and 18:00 local time. The first opportunity is after one week. Later becomes eligible after fourteen elapsed days; Keep as reference after 365 elapsed days. Eligibility is not a promise of an immediate notification. Due Later items and other eligible items, including expired references, share slots. Ignoring a reminder does not resolve it or escalate interruptions; that item waits at least fourteen days before another offer. These are initial product policies, not measured optima, and are not configurable schedules.
 
 Notifications are silent and contain no bookmark titles or URLs. Clicking brings the selected bookmark into Backburner, never directly to its website. A one-item reminder review does not change manual batch size. If you have an unfinished session, Backburner offers an explicit resume/switch choice rather than overwriting it.
 

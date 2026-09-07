@@ -1,6 +1,7 @@
 // Set only after observed founder calibration. A null default is a preview gate.
 export const DEFAULT_BATCH_SIZE = null;
 export const LATER_DELAY = 14 * 24 * 60 * 60 * 1000;
+export const REFERENCE_DELAY = 365 * 24 * 60 * 60 * 1000;
 export const DISPOSITIONS = ['reference', 'dismissed', 'later'];
 export const emptyState = () => ({ version: 2, onboarded: false, batchSize: DEFAULT_BATCH_SIZE,
   entries: {}, recovery: {}, session: null, lastSession: null, totals: { shown: 0, opened: 0, reference: 0, dismissed: 0, later: 0, removed: 0, sessions: 0 } });
@@ -60,7 +61,8 @@ function interleave(nodes) {
 export function eligibleAt(state, node) {
   const entry=state.entries[node.id];
   if(!matches(entry,node))return 0;
-  return entry.disposition==='later' ? entry.at+LATER_DELAY : Infinity;
+  if(entry.disposition==='later')return entry.at+LATER_DELAY;
+  return entry.disposition==='reference' ? entry.at+REFERENCE_DELAY : Infinity;
 }
 
 export function candidates(nodes, state, now = Date.now()) {

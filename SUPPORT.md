@@ -18,6 +18,13 @@ An uncertain restore requires Check restore. A possible match requires your conf
 
 These leave Chrome intact. Undo them in Review decisions to make a bookmark eligible again. Managed bookmarks cannot be removed. Non-web URLs are not suggested. Duplicates are separate native entries; removing one does not remove the others.
 
+Keep as reference pauses eligibility for 365 elapsed days from the saved decision,
+including records saved before the annual policy was added. Choosing Keep again
+starts another year. Later waits fourteen days. Stop suggesting never expires
+for a matching bookmark identity; Undo or a changed URL can make it eligible
+again. Title/folder changes do not reset decisions. Annual eligibility does not
+bypass opt-in, the weekly attention limit or Chrome/OS delivery settings.
+
 ## Saving errors
 
 If backing up fails, removal is not attempted. If a native operation succeeded but its final save failed, it may need recovery inspection. Read the pending state; do not assume an error means nothing changed.

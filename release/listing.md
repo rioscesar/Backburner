@@ -1,4 +1,4 @@
-# Store listing material — 0.1.3
+# Store listing material — 0.1.7
 
 Draft, not submitted. Human usability and publisher checks remain.
 
@@ -12,9 +12,14 @@ Saved for later doesn't have to mean forgotten forever.
 
 Backburner brings your existing Chrome bookmarks into a small review. Open a page, keep it as a reference, leave it for later, or confirm removal when it is no longer useful. Stop suggesting is also available without deleting the bookmark.
 
+Keep as reference means no need to ask again for a year: 365 elapsed days from
+the saved decision, including existing kept records. Choosing Keep again starts
+another year. Stop suggesting is the no-expiry opt-out for that bookmark
+identity while leaving it in Chrome. Undo or changing its URL restores eligibility.
+
 A local recovery copy is saved before each removal. Restore it through Review decisions, even after restarting Chrome. Restoration creates a new bookmark; original IDs and dates are not recovered. Copies stay on this device until restored or explicitly forgotten. Uninstalling or clearing extension data erases them. Chrome may sync native changes to other devices.
 
-Enable optional quiet reminders once to let an unresolved bookmark come back without remembering to open Backburner. At most one notification attempt per seven elapsed days, starting after one week, during 09:00-18:00 local time. Later keeps a bookmark out of review for fourteen elapsed days before it can share a future reminder slot. These are initial fixed policies, not measured optima or configurable scheduling. Ignored reminders do not escalate or resolve anything.
+Enable optional quiet reminders once to let an eligible bookmark come back without remembering to open Backburner. At most one notification attempt per seven elapsed days, starting after one week, during 09:00-18:00 local time. Later keeps a bookmark out of review for fourteen elapsed days; references whose 365-day wait has elapsed share the other eligible slots. Eligibility does not guarantee immediate delivery. These are initial fixed policies, not measured optima or configurable scheduling. Ignored reminders do not escalate or resolve anything.
 
 Notifications show no bookmark titles or URLs. Click to see the selected bookmark in Backburner; websites never open automatically. Chrome must be able to run, and sleep or Chrome/OS notification settings can delay or suppress reminders. No exact delivery or attention guarantee. Declining permission leaves manual review available.
 

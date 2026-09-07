@@ -207,6 +207,20 @@ test('forget copy warns about permanent recovery loss, respects cancel, and give
   assert.deepEqual(h.read().entries,before.entries);
 });
 
+test('Keep and Stop handlers report annual versus permanent suppression without requesting permission',async()=>{
+  for(const [button,disposition,copy] of [['keep','reference',/365 days/],['dismiss','dismissed',/no expiry/]]) {
+    const h=await completionHarness([{id:'1',url:'https://example.com/policy',title:'Synthetic policy'}]);
+    await h.click('review-more');
+    await h.evaluate("chrome.bookmarks.get=async id=>[nodes.find(n=>n.id===id)];chrome.permissions.request=async()=>{throw Error('Unexpected permission request')}");
+    await h.click(button);
+    const saved=h.read(),entry=saved.entries['1'];
+    assert.equal(entry.disposition,disposition);
+    assert.match(h.elements.get('notice').children[0].textContent,copy);
+    assert.equal(await h.evaluate('eligibleAt(state,nodes[0])'),button==='keep'?entry.at+domain.REFERENCE_DELAY:Infinity);
+    await h.click('review-more');assert.equal(h.read().session,null);
+  }
+});
+
 test('reminder handoff preserves an unfinished review until explicit switch and uses the selected item',async()=>{
   const h=await completionHarness([1,2].map(id=>({id:String(id),url:`https://example.com/${id}`,title:`Synthetic ${id}`})));
   await h.evaluate('save(s=>startSession(s,nodes))');

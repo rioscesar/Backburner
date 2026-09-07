@@ -1,6 +1,6 @@
 # Backburner privacy policy
 
-Applies to version 0.1.3. Maintained through [rioscesar/Backburner](https://github.com/rioscesar/Backburner).
+Applies to version 0.1.7. Maintained through [rioscesar/Backburner](https://github.com/rioscesar/Backburner).
 
 ## What stays on your device
 
@@ -29,7 +29,7 @@ Backburner does not transmit bookmark data, recovery content or decision records
 
 Review decisions lets you undo suppression, restore removed bookmarks, or explicitly forget a recovery copy. Restore creates a new native bookmark; original IDs and dates cannot be restored. If the original folder is unavailable, confirm a replacement destination. Pending/ambiguous results require inspection to avoid duplicate creation.
 
-Quiet reminders can be enabled or turned off in Privacy & help without uninstalling. Declining notification permission leaves manual review working. The fixed policy is no more than one proactive attempt per seven elapsed days; Later suppresses a bookmark for fourteen elapsed days. Native notification delivery may be delayed or blocked by Chrome/OS settings, browser shutdown or device sleep. We do not infer that a notification was seen, that an opened bookmark was read, or that an ignored reminder resolves a bookmark.
+Quiet reminders can be enabled or turned off in Privacy & help without uninstalling. Declining notification permission leaves manual review working. The fixed policy is no more than one proactive attempt per seven elapsed days; Later suppresses a bookmark for fourteen elapsed days and Keep as reference for 365 elapsed days from its saved decision, including existing records. Repeating either choice resets its wait. Stop suggesting has no expiry for the matching bookmark identity; Undo or a changed URL restores eligibility. No new deadline records or data collection are required. Native notification delivery may be delayed or blocked by Chrome/OS settings, browser shutdown or device sleep. We do not infer that a notification was seen, that an opened bookmark was read, or that an ignored reminder resolves a bookmark.
 
 **Uninstalling Backburner or clearing extension storage erases all remaining recovery copies and decisions.** Disabling the extension retains them. There is no developer-held or server-side backup. Local recovery cannot reverse every Chrome sync effect or guarantee exact original metadata. Old versions cannot safely interpret the new recovery schema; do not downgrade as a recovery method.
 

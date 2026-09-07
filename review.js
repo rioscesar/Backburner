@@ -90,7 +90,7 @@ async function renderReview() {
 function renderHome() {
   show('home'); const available=candidates(nodes,state).length;
   $('start').hidden=!available;
-  $('home-copy').textContent=available ? `${available.toLocaleString()} ${available===1?'bookmark is':'bookmarks are'} ready for another look. ${state.batchSize ? `Up to ${state.batchSize} in your next session.` : 'Finish your first look whenever you like.'}` : nodes.length ? 'Nothing ready for review now. Later bookmarks wait at least 14 days. You can check reminder settings in Privacy & help or undo a choice in Review decisions.' : 'No web bookmarks to revisit yet. Save a page in Chrome, then come back. Folders and non-web links aren’t included.';
+  $('home-copy').textContent=available ? `${available.toLocaleString()} ${available===1?'bookmark is':'bookmarks are'} ready for another look. ${state.batchSize ? `Up to ${state.batchSize} in your next session.` : 'Finish your first look whenever you like.'}` : nodes.length ? 'Nothing ready for review now. Later waits at least 14 days; Keep as reference waits 365 days. Stop suggesting has no expiry. You can check reminder settings in Privacy & help or undo a choice in Review decisions.' : 'No web bookmarks to revisit yet. Save a page in Chrome, then come back. Folders and non-web links aren’t included.';
 }
 
 function renderSummary() {
@@ -111,7 +111,7 @@ async function renderDecisions() {
   for(const node of rows.slice(0,decisionLimit)) {
     const entry=state.entries[node.id], row=document.createElement('article'), copy=document.createElement('div'), title=document.createElement('h2'), caption=document.createElement('p'), button=document.createElement('button');
     row.className='decision-row'; title.textContent=node.title || new URL(node.url).hostname;
-    caption.textContent=`${new URL(node.url).hostname} · ${{reference:'Kept as reference',dismissed:'Stopped suggesting',later:'Left for later'}[entry.disposition]}`;
+    caption.textContent=`${new URL(node.url).hostname} · ${{reference:'Kept as reference for a year',dismissed:'Stopped suggesting — no expiry',later:'Left for later'}[entry.disposition]}`;
     button.className='open-button';button.textContent='Undo';button.setAttribute('aria-label',`Undo decision for ${node.title || new URL(node.url).hostname}`);
     button.addEventListener('click',()=>run(async()=>{await save(s=>undo(s,node.id));message('Decision undone. This bookmark can appear in a future session.');await renderDecisions();}));
     copy.append(title,caption);row.append(copy,button);$('decisions-list').append(row);
@@ -145,7 +145,9 @@ async function revalidate() {
 async function choose(disposition) {
   clearMessage(); if(!await revalidate())return;
   await save(s=>decide(s,current,disposition));
-  message(disposition==='later'?'Saved for at least 14 days. Automatic reminders require enabled notifications; eligibility does not promise an immediate reminder.':'Decision saved. Your Chrome bookmark stays intact.');
+  message(disposition==='later'?'Saved for at least 14 days. Automatic reminders require enabled notifications; eligibility does not promise an immediate reminder.':
+    disposition==='reference'?'Kept as reference for 365 days. It becomes eligible again after that; automatic reminders require enabled notifications.':
+    'Suggestions stopped with no expiry. Your Chrome bookmark stays intact.');
   await renderReview();
 }
 

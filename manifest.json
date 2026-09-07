@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Backburner",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Revisit forgotten bookmarks. Keep what matters, defer the undecided, and remove what you no longer need.",
   "minimum_chrome_version": "114",
   "permissions": [

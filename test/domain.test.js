@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {emptyState,safeUrl,flatten,folderPath,candidates,startSession,startReminderSession,eligibleAt,LATER_DELAY,markShown,decide,finish,undo,validateState} from '../domain.js';
+import {emptyState,safeUrl,flatten,folderPath,candidates,startSession,startReminderSession,eligibleAt,LATER_DELAY,REFERENCE_DELAY,markShown,decide,finish,undo,validateState} from '../domain.js';
 import {node,fp,otherFp} from './fixtures.js';
 
 test('URL controls accept web destinations and reject executable/local/credential URLs',()=>{
@@ -55,6 +55,28 @@ test('all decisions preserve input nodes; suppression, undo, and changed URL fin
     assert.equal(candidates([n],s,Date.now()+LATER_DELAY).length,disposition==='later'?1:0);
     assert.equal(candidates([node('1',{fingerprint:otherFp})],s).length,1);
     assert.equal(candidates([n],undo(s,'1')).length,1);
+  }
+});
+test('Keep expires after exactly 365 elapsed days, repeats reset it, and Stop never expires',()=>{
+  assert.equal(REFERENCE_DELAY,365*86400000);
+  for(const at of [Date.UTC(2023,2,1,10),Date.UTC(2024,1,29,10)]) {
+    const n=node(),s=finish(decide(startSession(emptyState(),[n],at),n,'reference',at),at+1);
+    const due=at+REFERENCE_DELAY,before=structuredClone(s);
+    assert.equal(eligibleAt(s,n),due);
+    assert.deepEqual(candidates([n],s,due-1),[]);
+    assert.deepEqual(candidates([n],s,due),[n]);
+    assert.equal(startSession(s,[n],due-1).session,null);
+    assert.throws(()=>startReminderSession(s,n,due-1),/no longer waiting/);
+    assert.equal(startReminderSession(s,n,due).session.queue[0].id,n.id);
+    assert.equal(eligibleAt(s,{...n,title:'Renamed',parentId:'99'}),due);
+    assert.equal(eligibleAt(s,{...n,fingerprint:otherFp}),0);
+    assert.equal(eligibleAt(undo(s,n.id),n),0);
+    assert.deepEqual(s,before);
+    const again=finish(decide(startSession(s,[n],due),n,'reference',due),due+1);
+    assert.equal(eligibleAt(again,n),due+REFERENCE_DELAY);
+    const stopped=finish(decide(startSession(s,[n],due),n,'dismissed',due),due+1);
+    assert.equal(eligibleAt(stopped,n),Infinity);
+    assert.deepEqual(candidates([n],stopped,Number.MAX_SAFE_INTEGER),[]);
   }
 });
 test('deferred entries come after unseen ones and repeat count increases only for matching URL',()=>{
