@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Backburner — A little room for what matters</title>
+  <link rel="icon" href="icons/icon32.png">
+  <link rel="stylesheet" href="review.css">
+  <script type="module" src="review.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to review</a>
+  <header class="site-header">
+    <a class="brand" href="review.html" aria-label="Backburner home"><img src="icons/icon48.png" width="36" height="36" alt="">backburner<span class="brand-dot">.</span></a>
+    <nav aria-label="Main"><button id="decisions-nav" class="text-button">Review decisions</button><button id="help-nav" class="text-button">Privacy &amp; help</button></nav>
+  </header>
+  <div id="notice" class="notice" role="status" aria-live="polite"></div>
+  <main id="main" tabindex="-1">
+    <section id="loading" class="centered"><p class="eyebrow">A LITTLE ROOM FOR WHAT MATTERS</p><h1>Finding your bookmarks…</h1></section>
+    <section id="welcome" class="centered" hidden>
+      <p class="eyebrow">SAVED FOR LATER. READY FOR NOW?</p>
+      <h1>Some things are<br>worth coming back to.</h1>
+      <p class="lede">Meet the bookmarks you meant to revisit.<br>Keep what matters. Let the rest leave your attention.</p>
+      <div class="welcome-steps"><div><span>01</span><h2>Take another look</h2><p>One bookmark at a time, from the ones you already have.</p></div><div><span>02</span><h2>Make a small decision</h2><p>Keep as a reference, come back later, or stop suggesting it.</p></div><div><span>03</span><h2>Leave with less on your mind</h2><p>Finish whenever you like. Every decision is reversible.</p></div></div>
+      <p class="trust-note">Your Chrome bookmarks stay intact. No account. No history access.<br>Bookmarks and decisions are processed on this device.</p>
+      <button id="welcome-start" class="primary">Take a first look <span aria-hidden="true">↗</span></button>
+      <p id="calibration-note" class="small-note">Preview: finish your first session when it feels enough. That sets the size of your next sessions.</p>
+    </section>
+    <section id="home" class="centered" hidden>
+      <p class="eyebrow">A LITTLE ROOM FOR WHAT MATTERS</p><h1>A fresh look.<br>A lighter list.</h1><p id="home-copy" class="lede"></p>
+      <button id="start" class="primary">Start a small review <span aria-hidden="true">↗</span></button>
+      <p class="small-note">No streaks. No catching up. Just a place to pick up a loose thread.</p>
+    </section>
+    <section id="review" hidden>
+      <div class="review-heading"><div><p class="eyebrow">YOUR MOMENT TO REVISIT</p><h1>Still worth your attention?</h1></div><button id="finish" class="text-button">Finish for now <span aria-hidden="true">↗</span></button></div>
+      <div class="session-progress"><span id="progress"></span><span id="progress-detail"></span></div>
+      <article class="bookmark-card">
+        <div class="bookmark-meta"><span id="domain-mark" aria-hidden="true"></span><span id="domain"></span><span class="saved-label" id="saved-date"></span></div>
+        <h2 id="bookmark-title" tabindex="-1"></h2><p id="bookmark-url" class="url"></p>
+        <div class="card-bottom"><p id="selection-reason"></p><button id="open" class="open-button">Open bookmark <span aria-hidden="true">↗</span></button></div>
+      </article>
+      <p id="deferrals" class="small-note"></p>
+      <div class="decision-actions"><button id="keep" class="decision"><span class="decision-icon" aria-hidden="true">◇</span><strong>Keep as reference</strong><span>Useful. No need to ask again.</span></button><button id="later" class="decision"><span class="decision-icon" aria-hidden="true">↻</span><strong>Later</strong><span>Another session, another chance.</span></button><button id="dismiss" class="decision"><span class="decision-icon" aria-hidden="true">→</span><strong>Stop suggesting</strong><span>Let this leave your attention.</span></button></div>
+      <p class="trust-note compact">All three keep your Chrome bookmark. You can undo decisions anytime.</p>
+    </section>
+    <section id="summary" class="centered" hidden><p class="eyebrow">THAT’S ENOUGH FOR NOW</p><h1>A little less<br>left for someday.</h1><p class="lede" id="summary-copy"></p><div id="summary-counts" class="summary-counts"></div><div class="reflection"><p>How did that feel? <span class="muted">Optional · stays on your device</span></p><div class="feedback-row"><button data-feeling="useful">Useful</button><button data-feeling="neutral">Neutral</button><button data-feeling="chore">Like a chore</button></div><p>Did you deal with something meaningful?</p><div class="feedback-row"><button data-meaningful="true">Yes</button><button data-meaningful="false">Not this time</button></div></div><button id="done" class="primary">All done</button><p class="small-note">Close this tab. Come back when you want to.</p></section>
+    <section id="decisions" hidden><p class="eyebrow">NOTHING SET IN STONE</p><div class="review-heading"><h1>Room to change your mind.</h1><button class="text-button" id="decisions-back">Back to review</button></div><p class="lede">Your Chrome bookmarks are unchanged. Undo a decision to make it eligible for a future session.</p><p id="decisions-empty" class="empty-message" hidden>No saved decisions yet.</p><div id="decisions-list"></div><button id="more-decisions" class="text-button" hidden>Show more decisions</button></section>
+    <section id="help" hidden><p class="eyebrow">CLEAR BY DESIGN</p><div class="review-heading"><h1>Your bookmarks.<br>Your decisions.</h1><button id="help-back" class="text-button">Back to review</button></div><div class="help-grid"><article><h2>What happens to a bookmark?</h2><p>Nothing in Chrome changes. Keep as reference and Stop suggesting hide it from future Backburner reviews. Later puts it behind bookmarks you haven’t reviewed yet, starting next session. Review decisions lets you undo any choice.</p><h2>Why this bookmark?</h2><p>We start with older recorded activity, mixing in bookmarks with unknown dates. Dates are clues, not proof of whether you read something or still care about it. We do not access browser history.</p><h2>Coming back</h2><p>Use the Backburner toolbar button. Pin it from Chrome’s Extensions menu if you want it within reach. An unfinished session resumes automatically. There are no reminders or streaks.</p></article><article><h2>Data &amp; permissions</h2><p>Chrome’s bookmarks permission allows reading and changing bookmarks. Backburner only reads them. Storage saves your decisions and session on this device. No account, remote code, page scanning, analytics service, or data transmission.</p><p>We store bookmark IDs, URL fingerprints to recognize changed bookmarks, decisions, counts, and optional session feedback. We don’t save bookmark titles or URLs in these records. Fingerprints are not anonymization. Local records do not sync, and uninstalling removes them. Chrome’s own bookmark sync is independent.</p><p>Opening a bookmark visits that website normally. The site’s own privacy practices apply.</p><h2>Help &amp; privacy</h2><p><a href="https://github.com/rioscesar/Backburner/blob/experiment/first-review/PRIVACY.md" target="_blank" rel="noreferrer">Full privacy policy ↗</a></p><p><a href="https://github.com/rioscesar/Backburner/issues" target="_blank" rel="noreferrer">Report a problem ↗</a> — reports are public. Never include personal bookmarks or browsing data.</p></article></div></section>
+    <section id="locked" class="centered" hidden><p class="eyebrow">ONE REVIEW AT A TIME</p><h1>You have a review open.</h1><p class="lede">Return to your other Backburner tab to keep your decisions in one place.</p><button id="reload-locked" class="primary">Try this tab again</button></section>
+    <section id="fatal" class="centered" hidden><p class="eyebrow">LET’S PAUSE HERE</p><h1>We couldn’t load your review.</h1><p class="lede">Your Chrome bookmarks are unchanged. Reload to try again. If this continues, contact support; don’t uninstall if you want to preserve local decisions.</p><button id="reload-fatal" class="primary">Reload</button></section>
+  </main>
+  <footer><span>A place for unfinished curiosity.</span><span>LOCAL BY DESIGN <i aria-hidden="true"></i></span></footer>
+</body>
+</html>

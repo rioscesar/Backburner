@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "Backburner",
+  "version": "0.1.0",
+  "description": "Revisit forgotten bookmarks. Keep what matters, leave the rest behind. Your Chrome bookmarks stay intact.",
+  "minimum_chrome_version": "114",
+  "permissions": [
+    "bookmarks",
+    "storage"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "Open Backburner"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'none'; connect-src 'none'; img-src 'self'; style-src 'self'"
+  },
+  "icons": {
+    "32": "icons/icon32.png",
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
