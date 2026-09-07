@@ -1,6 +1,16 @@
-# Release verification — 0.1.8
+# Release verification — 0.1.9
 
 Use synthetic bookmarks in a clean profile. No account needed.
+
+Reproduce interruption after native restore creation but before the final
+recovery-record save, including a browser restart where Chrome reuses the removed
+ID. Check restore must offer the new matching candidate, not report that the
+original still exists. Cancel and failed confirmation saves retain the journal.
+Confirmed reconciliation clears only that recovery copy, never creates another
+bookmark, and leaves pre-existing duplicates unchanged. Changed title/URL/parent,
+missing candidates and pre-attempt matching IDs cannot be confirmed as the new
+restore. Direct retry remains blocked while restoration is uncertain. An
+unconfirmed removal whose original is still present must still block duplicates.
 
 New sessions must use weighted random draws without replacement, not old-first
 ordering or year buckets. Record seeded old/recent-first controls and distribution
@@ -50,7 +60,7 @@ Run npm run package and npm test; load dist/unpacked, the exact extracted ZIP, a
 
 Verify first run, Open, Keep, Later, secondary Stop suggesting and Undo. These must not modify Chrome. Verify Remove presents title/URL/folder and sync/recovery limitations, focuses Cancel, and cancels without mutation. Confirm removal of one leaf; unrelated and same-URL siblings remain. Verify factual completion with no survey.
 
-Restart Chrome and restore from Removed bookmarks. Verify new native ID, destination/position and cleared recovery copy. Missing/unwritable parent must require an explicit destination. Forget-copy cancellation must retain the copy; confirmed forgetting must remove only the local backup. Uninstall loss must be clear in UI and policy.
+Restart Chrome and restore from Removed bookmarks. Verify creation of a new native bookmark, destination/position and cleared recovery copy; do not assume Chrome always assigns a never-before-used ID. Missing/unwritable parent must require an explicit destination. Forget-copy cancellation must retain the copy; confirmed forgetting must remove only the local backup. Uninstall loss must be clear in UI and policy.
 
 Inject failure before backup save (no remove), on native remove (copy retained), after remove before final save (pending record survives), on create (pending restore), and after create before final save (inspect candidate before retry; no blind duplicates). Test double clicks, stale/managed/folder rejection, corrupt data, v1 migration without survey fields, reload, exclusive tab writer, empty states, literal hostile titles and narrow keyboard-accessible UI. Never treat simulated events as proof of actual multi-device sync behavior.
 
@@ -61,6 +71,19 @@ Verify All done closes only the current review tab and reopening preserves saved
 Verify Review more bookmarks starts another session directly in the same tab with the existing selection and batch size. With no eligible bookmarks, show the empty state.
 
 ## Proactive reminder acceptance
+
+For a short manual OS-presentation check only, `npm run package:notification-test`
+builds the marked `dist/notification-test/unpacked` variant. Use a separate
+synthetic profile, enable notification permission through the real control, close
+the review and observe repeated 30-second attempts. This variant bypasses the
+delivery window and shortens offer/retry delays, not Later/Keep decision deadlines.
+Default off, private copy, pending identity, visible-review suppression and
+explicit handoff still apply. Stop the test extension afterward.
+
+The test variant must never be the submission artifact. Verify normal packaging
+still uses seven elapsed days, the normal window and fourteen-day offer cooldown,
+with no test markers or transformed runtime. Keep actual visible/click evidence
+separate from scheduler mocks and test cadence separate from release-policy proof.
 
 Use a fresh synthetic profile. Decline notification permission and verify manual review still works. Enable through the actual user-gesture prompt; never grant it by changing the shipped required permissions. Default off, no immediate toast, fixed seven-day maximum, 09:00-18:00 local window, fourteen-day Later snooze, and no configurable schedule.
 

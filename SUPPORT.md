@@ -4,7 +4,7 @@
 
 ## Restore a removed bookmark
 
-Choose **Review decisions → Removed bookmarks → Restore**. Confirm the destination. Restoration creates a new native bookmark; original IDs/dates are lost. Missing folders require another confirmed destination. Chrome may sync removal and restoration.
+Choose **Review decisions → Removed bookmarks → Restore**. Confirm the destination. Restoration creates a new native bookmark with new dates. Chrome assigns the ID and may reuse a removed ID after restart. Missing folders require another confirmed destination. Chrome may sync removal and restoration.
 
 Recovery copies persist across browser restarts until restored or explicitly forgotten. **Do not uninstall or clear extension data if you need a copy: that erases local recovery.** Disabling preserves it. Do not downgrade to an older version to troubleshoot.
 
@@ -13,6 +13,13 @@ Recovery copies persist across browser restarts until restored or explicitly for
 An unconfirmed removal can mean Chrome still has the bookmark or that removal completed before its result was saved. Inspect recovery; Backburner never automatically retries deletion. If the original bookmark exists, it will not create a duplicate. You can inspect Chrome and explicitly forget an unneeded copy.
 
 An uncertain restore requires Check restore. A possible match requires your confirmation that it is the restored bookmark. If none is found, you can explicitly allow another attempt, then restore. If a match moved or changed, cancel and inspect Chrome rather than blindly creating another copy. A failed operation preserves its recovery record.
+
+An interrupted restore can leave a restored bookmark with the same ID as the
+removed one. Backburner uses the saved restoration phase and pre-restore matching
+IDs to offer **Confirm already restored**, rather than mistaking it for an
+original that was never removed. Check the matching title, URL and destination
+before confirming. Cancel retains the recovery copy; confirmation does not create
+another bookmark. Existing matching bookmarks from before the attempt are excluded.
 
 ## Keep, Later and Stop suggesting
 

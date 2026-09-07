@@ -41,16 +41,19 @@ export function createRemoval({bookmarks,read,write,newId=()=>crypto.randomUUID(
     });},
     async inspect(key) {
       const r=record(key), nodes=await tree();
-      const original=nodes.find(n=>n.id===r.id);
+      // The restoring journal was saved only after the original ID was absent.
+      // Chrome may reuse that ID for the newly created restore across restart.
+      const original=r.status==='restoring' ? undefined : nodes.find(n=>n.id===r.id);
       const parent=nodes.find(n=>n.id===(r.restoreParent??r.parentId) && !n.url && !n.unmodifiable);
       const matches=nodes.filter(n=>n.url===r.url && n.title===r.title && (!r.beforeIds || !r.beforeIds.includes(n.id)) && (r.status!=='restoring'||n.parentId===r.restoreParent));
       return {original,parent,matches,folders:nodes.filter(n=>!n.url && n.id!=='0' && !n.unmodifiable)};
     },
     restore(key,parentId,confirmed=false) {return exclusive(async()=>{
       if(!confirmed)throw new Error('Restoration requires confirmation.');
-      const r=record(key), nodes=await tree();
-      if(nodes.some(n=>n.id===r.id))throw new Error('The original bookmark still exists. Check recovery before restoring.');
+      const r=record(key);
       if(r.status==='restoring')throw new Error('Previous restoration is uncertain. Check recovery before retrying.');
+      const nodes=await tree();
+      if(nodes.some(n=>n.id===r.id))throw new Error('The original bookmark still exists. Check recovery before restoring.');
       const parent=nodes.find(n=>n.id===parentId && n.id!=='0' && !n.url && !n.unmodifiable);
       if(!parent)throw new Error('Choose an available folder before restoring.');
       const beforeIds=nodes.filter(n=>n.url===r.url && n.title===r.title).map(n=>n.id);

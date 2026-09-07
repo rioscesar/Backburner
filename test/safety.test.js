@@ -211,6 +211,38 @@ test('forget copy warns about permanent recovery loss, respects cancel, and give
   assert.deepEqual(h.read().entries,before.entries);
 });
 
+test('Check restore offers reused-ID reconciliation, preserves cancellation and never creates another bookmark',async()=>{
+  const nodes=[{id:'1',title:'Synthetic folder'},
+    {id:'10',parentId:'1',index:0,title:'Synthetic restored bookmark',url:'https://example.com/restored'},
+    {id:'11',parentId:'1',index:1,title:'Synthetic restored bookmark',url:'https://example.com/restored'}];
+  const h=await completionHarness(nodes);
+  await h.evaluate(`save(s=>{
+    s.recovery['11111111-1111-4111-8111-111111111111']={id:'10',parentId:'1',index:0,
+      title:'Synthetic restored bookmark',url:'https://example.com/restored',
+      fingerprint:nodes.find(n=>n.id==='10').fingerprint,at:1,status:'restoring',
+      counted:true,restoreParent:'1',beforeIds:['11']};
+    return s;
+  })`);
+  await h.evaluate(`chrome.bookmarks.create=async()=>{throw Error('Unexpected duplicate creation');};
+    confirmAction=async(title,detail,action,folders)=>{globalThis.restorePrompt={title,detail,action,folders};return {accepted:false};};
+    renderRecovery()`);
+  const before=h.read();
+  const check=()=>h.elements.get('recovery-list').children[0].children[1].children[0].handlers.click();
+  await check();
+  assert.match(h.evaluate('restorePrompt.title'),/already be restored/);
+  assert.deepEqual(Array.from(h.evaluate('restorePrompt.folders'),n=>n.id),['10']);
+  assert.deepEqual(h.read(),before);
+  assert.equal(h.elements.get('notice').children.length,0);
+  await h.evaluate("confirmAction=async()=>({accepted:true,parentId:'10'})");
+  h.failSave(true);await check();
+  assert.deepEqual(h.read(),before);
+  h.failSave(false);await check();
+  assert.deepEqual(h.read().recovery,{});
+  assert.deepEqual(h.read().entries,before.entries);
+  assert.equal(h.elements.get('recovery-list').children.length,0);
+  assert.equal(nodes.filter(n=>n.url).length,2);
+});
+
 test('Keep and Stop handlers report annual versus permanent suppression without requesting permission',async()=>{
   for(const [button,disposition,copy] of [['keep','reference',/365 days/],['dismiss','dismissed',/no expiry/]]) {
     const h=await completionHarness([{id:'1',url:'https://example.com/policy',title:'Synthetic policy'}]);

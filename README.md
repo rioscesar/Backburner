@@ -6,7 +6,7 @@ Backburner brings existing Chrome bookmarks into a small review. Open something 
 
 ![Backburner review](release/screenshot-review.png)
 
-## Status: developer preview 0.1.8
+## Status: developer preview 0.1.9
 
 This is a working extension candidate, not a Chrome Web Store release. Public launch still needs founder session-size calibration, a newcomer walkthrough, and store submission/review. The first preview session learns its size when you finish; that is not yet the final public default.
 
@@ -18,6 +18,26 @@ This is a working extension candidate, not a Chrome Web Store release. Public la
 4. Open Backburner from the Extensions menu; pin it if useful.
 
 On Windows, `npm run package` creates `dist/backburner.zip` and extracts its exact runtime contents to `dist/unpacked`. Load the latter to test the package. A ZIP is a store upload artifact, not a one-click consumer install.
+
+### Temporary 30-second notification test
+
+Run `npm run package:notification-test` to create a **separate, non-public test
+build** under `dist/notification-test/unpacked`. Normal packaging and source keep
+the seven-day production limit. Never submit the notification-test ZIP to the
+Chrome Web Store.
+
+Use a separate Chrome test profile with a made-up web bookmark. Load that test
+folder unpacked, enable quiet reminders and grant notification permission, then
+close the review tab and leave Chrome running. The test build attempts a private
+notification after 30 seconds and can re-offer an unresolved bookmark every
+30 seconds, at any hour. A visible review still suppresses redundant reminders;
+Later's 14-day and Keep's 365-day decision waits are not shortened.
+
+Chrome/OS settings can delay or suppress presentation. Observe an actual desktop
+notification and click it to confirm the selected-item handoff; API success alone
+does not establish that. Turn reminders off or disable the **test extension**
+when finished. Its local decisions/recovery are separate from your regular
+installation. Leave your regular extension and recovery data untouched.
 
 ## Actions
 
@@ -70,9 +90,14 @@ Chrome alarms can be late or disappear across restart; Backburner reconstructs t
 
 Before removal, Backburner saves a local recovery copy containing the title, URL and original location. If that save fails, removal is not attempted. Use **Undo removal**, or **Review decisions → Removed bookmarks → Restore** after closing or restarting Chrome.
 
-Restore creates a new bookmark. Original IDs and dates are not recovered; position is restored where possible. If the original folder is unavailable, confirm another destination. Copies remain until restored or explicitly forgotten. **Uninstalling Backburner or clearing extension storage destroys recovery copies.** Disabling retains them. Chrome sync is independent; Backburner cannot reverse all cross-device effects.
+Restore creates a new bookmark. Original dates are not recovered; Chrome assigns its ID and may reuse a previously removed ID after restart. Position is restored where possible. If the original folder is unavailable, confirm another destination. Copies remain until restored or explicitly forgotten. **Uninstalling Backburner or clearing extension storage destroys recovery copies.** Disabling retains them. Chrome sync is independent; Backburner cannot reverse all cross-device effects.
 
 Interrupted operations remain visible for inspection. A possible completed restoration requires confirmation before another copy is created. Do not repeatedly retry, downgrade, or uninstall to fix an uncertain operation. See [support](SUPPORT.md).
+
+If a restore completed but its final local save failed, **Check restore** can
+recognize the matching new bookmark even when Chrome reused the removed ID.
+Confirm the candidate only after checking it; cancel leaves the recovery copy
+intact. A reused ID alone never proves that an uncertain restore succeeded.
 
 ## Local by design
 

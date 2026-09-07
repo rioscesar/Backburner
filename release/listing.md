@@ -1,4 +1,4 @@
-# Store listing material — 0.1.8
+# Store listing material — 0.1.9
 
 Draft, not submitted. Human usability and publisher checks remain.
 

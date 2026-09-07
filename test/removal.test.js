@@ -18,7 +18,7 @@ function fixture() {
       getTree:async()=>[...native.values()].map(n=>structuredClone(n)),
       getChildren:async parent=>[...native.values()].filter(n=>n.parentId===parent),
       remove:async id=>{removes++;if(f.failRemove)throw Error('Synthetic native rejection');native.delete(id);},
-      create:async data=>{creates++;if(f.failCreate)throw Error('Synthetic native rejection');const n={...data,id:String(100+creates)};native.set(n.id,n);return n;}
+      create:async data=>{creates++;if(f.failCreate)throw Error('Synthetic native rejection');const n={...data,id:f.createId??String(100+creates)};native.set(n.id,n);return n;}
     },
     counts:()=>({writes,removes,creates}),
     restart:()=>createRemoval({bookmarks:f.bookmarks,read:f.read,write:f.write,newId:()=>key})
@@ -57,6 +57,52 @@ test('interrupted restore finds new-ID candidates and never blindly duplicates',
   const resumed=f.restart(), info=await resumed.inspect(key);assert.equal(info.matches.length,1);assert.notEqual(info.matches[0].id,'11');
   await assert.rejects(resumed.restore(key,'1',true));await assert.rejects(resumed.resolveRestore(key,null,true));assert.equal(f.counts().creates,1);
   await resumed.resolveRestore(key,info.matches[0].id,true);assert.deepEqual(f.read().recovery,{});
+});
+test('interrupted restore reconciles a reused original ID only after explicit confirmation',async()=>{
+  const f=fixture();await f.service.remove(f.original,true);
+  f.createId=f.original.id;f.failWrite=4;
+  await assert.rejects(f.service.restore(key,'1',true),/storage rejection/);
+  const resumed=f.restart(),before=structuredClone(f.read());
+  const info=await resumed.inspect(key);
+  assert.equal(info.original,undefined);
+  assert.deepEqual(info.matches.map(n=>n.id),[f.original.id]);
+  assert.deepEqual(f.read(),before);
+  assert.deepEqual(f.read().recovery[key].beforeIds,['11']);
+  await assert.rejects(resumed.restore(key,'1',true),/Previous restoration is uncertain/);
+  await assert.rejects(resumed.resolveRestore(key,f.original.id,false),/Confirmation required/);
+  await assert.rejects(resumed.resolveRestore(key,null,true),/possible restored bookmark/);
+  await assert.rejects(resumed.resolveRestore(key,'11',true),/Matching bookmark changed/);
+  assert.equal(f.counts().creates,1);
+  assert.deepEqual(f.read(),before);
+  f.failWrite=5;
+  await assert.rejects(resumed.resolveRestore(key,f.original.id,true),/storage rejection/);
+  assert.deepEqual(f.read(),before);
+  await resumed.resolveRestore(key,f.original.id,true);
+  assert.deepEqual(f.read().recovery,{});
+  assert.equal(f.counts().creates,1);assert.equal(f.counts().removes,1);
+  assert.equal(f.native.get('10').url,f.original.url);
+  assert.equal(f.native.get('11').url,f.original.url);
+});
+test('reused IDs with changed title, destination or parent cannot be confirmed as restored',async()=>{
+  for(const extra of [{title:'Changed'},{url:'https://example.com/changed'},{parentId:'2'}]) {
+    const f=fixture();await f.service.remove(f.original,true);
+    f.createId=f.original.id;f.failWrite=4;
+    await assert.rejects(f.service.restore(key,'1',true));
+    f.native.set(f.original.id,{...f.native.get(f.original.id),...extra});
+    const resumed=f.restart(),before=structuredClone(f.read()),info=await resumed.inspect(key);
+    assert.equal(info.original,undefined);assert.deepEqual(info.matches,[]);
+    await assert.rejects(resumed.resolveRestore(key,f.original.id,true),/Matching bookmark changed/);
+    await assert.rejects(resumed.restore(key,'1',true),/Previous restoration is uncertain/);
+    assert.deepEqual(f.read(),before);assert.equal(f.counts().creates,1);
+  }
+});
+test('phase-aware inspection still blocks duplicates when an unconfirmed removal left the original',async()=>{
+  const f=fixture();f.failRemove=true;
+  await assert.rejects(f.service.remove(f.original,true));
+  const before=structuredClone(f.read()),resumed=f.restart();
+  assert.equal((await resumed.inspect(key)).original.id,f.original.id);
+  await assert.rejects(resumed.restore(key,'1',true),/original bookmark still exists/);
+  assert.deepEqual(f.read(),before);assert.equal(f.counts().creates,0);
 });
 test('missing destination rejects; explicit alternate restoration succeeds; forget needs confirmation',async()=>{
   const f=fixture();await f.service.remove(f.original,true);f.native.delete('1');
