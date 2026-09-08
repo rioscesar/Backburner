@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Backburner — A little room for what matters</title>
+  <link rel="icon" href="icons/icon32.png">
+  <link rel="stylesheet" href="review.css">
+  <script type="module" src="review.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to review</a>
+  <header class="site-header">
+    <a class="brand" href="review.html" aria-label="Backburner home"><img src="icons/icon48.png" width="36" height="36" alt="">backburner<span class="brand-dot">.</span></a>
+    <nav aria-label="Main"><button id="decisions-nav" class="text-button">Review decisions</button><button id="help-nav" class="text-button">Privacy &amp; help</button></nav>
+  </header>
+  <div id="notice" class="notice" role="status" aria-live="polite"></div>
+  <main id="main" tabindex="-1">
+    <aside id="reminder-handoff" class="reminder-handoff" aria-labelledby="reminder-title" hidden>
+      <p class="eyebrow">FROM YOUR BACKBURNER REMINDER</p>
+      <h2 id="reminder-title" tabindex="-1"></h2><p id="reminder-url" class="url"></p>
+      <p>You have an unfinished review. Reviewing this reminder instead finishes that session first; its saved decisions and recovery copies are kept.</p>
+      <button id="reminder-resume" class="open-button">Resume current review</button>
+      <button id="reminder-switch" class="text-button">Finish current session and review reminder</button>
+    </aside>
+    <section id="loading" class="centered"><p class="eyebrow">A LITTLE ROOM FOR WHAT MATTERS</p><h1>Finding your bookmarks…</h1></section>
+    <section id="welcome" class="centered" hidden>
+      <p class="eyebrow">SAVED FOR LATER. READY FOR NOW?</p>
+      <h1>Some things are<br>worth coming back to.</h1>
+      <p class="lede">Meet the bookmarks you meant to revisit.<br>Keep what matters. Let the rest leave your attention.</p>
+      <div class="welcome-steps"><div><span>01</span><h2>Take another look</h2><p>One bookmark at a time, from the ones you already have.</p></div><div><span>02</span><h2>Make a small decision</h2><p>Keep as a reference, come back later, or remove it from Chrome.</p></div><div><span>03</span><h2>Leave with less on your mind</h2><p>Finish whenever you like. Removed bookmarks have local recovery copies.</p></div></div>
+      <p class="trust-note">Only confirmed Remove actions change Chrome. No account. No history access.<br>Bookmarks and decisions are processed on this device.</p>
+      <button id="welcome-start" class="primary">Take a first look <span aria-hidden="true">↗</span></button>
+      <p id="session-note" class="small-note">Finish whenever it feels enough. No fixed batch size, and stopping does not set a future limit.</p>
+      <p class="trust-note">Want a bookmark to come back without remembering to open Backburner?<br>Optional quiet notifications: at most once per 7 days, starting after one week. No titles or URLs in notifications.</p>
+      <button id="welcome-reminders" class="open-button">Enable quiet reminders</button>
+      <p id="welcome-reminder-status" class="small-note" role="status">Reminders off - manual review only.</p>
+    </section>
+    <section id="home" class="centered" hidden>
+      <p class="eyebrow">A LITTLE ROOM FOR WHAT MATTERS</p><h1>A fresh look.<br>A lighter list.</h1><p id="home-copy" class="lede"></p>
+      <button id="start" class="primary">Start a small review <span aria-hidden="true">↗</span></button>
+      <p class="small-note">No streaks. No catching up. Just a place to pick up a loose thread.</p>
+    </section>
+    <section id="review" hidden>
+      <div class="review-heading"><div><p class="eyebrow">YOUR MOMENT TO REVISIT</p><h1>Still worth your attention?</h1></div><button id="finish" class="text-button">Finish for now <span aria-hidden="true">↗</span></button></div>
+      <div class="session-progress"><span id="progress"></span><span id="progress-detail"></span></div>
+      <article class="bookmark-card">
+        <div class="bookmark-meta"><span id="domain-mark" aria-hidden="true"></span><span id="domain"></span><span class="saved-label" id="saved-date"></span></div>
+        <h2 id="bookmark-title" tabindex="-1"></h2><p id="bookmark-url" class="url"></p>
+        <div class="folder-context"><span>Folder:</span><p id="bookmark-folder" class="folder-path"><span id="folder-ancestors"></span><span id="folder-leaf"></span></p></div>
+        <div class="card-bottom"><p id="selection-reason"></p><button id="open" class="open-button">Open bookmark <span aria-hidden="true">↗</span></button></div>
+      </article>
+      <p id="deferrals" class="small-note"></p>
+      <div class="decision-actions"><button id="keep" class="decision"><span class="decision-icon" aria-hidden="true">◇</span><strong>Keep as reference</strong><span>No need to ask again for a year.</span></button><button id="later" class="decision"><span class="decision-icon" aria-hidden="true">↻</span><strong>Later</strong><span>Not before 14 days from now.</span></button><button id="remove" class="decision"><span class="decision-icon" aria-hidden="true">×</span><strong>Remove bookmark</strong><span>No longer useful. Remove from Chrome.</span></button></div>
+      <p class="trust-note compact">Keep and Later leave Chrome unchanged. Remove asks for confirmation and saves a local recovery copy.</p><button id="dismiss" class="text-button">Stop suggesting instead — keep in Chrome without future reminders</button>
+    </section>
+    <section id="summary" class="centered" hidden><p class="eyebrow">THAT’S ENOUGH FOR NOW</p><h1>A little less<br>left for someday.</h1><p class="lede" id="summary-copy"></p><div id="summary-counts" class="summary-counts"></div><button id="done" class="primary">All done</button><p class="small-note">Closes this tab. Come back when you want to.</p><button id="review-more" class="text-button">Review more bookmarks</button></section>
+    <section id="decisions" hidden><p class="eyebrow">NOTHING SET IN STONE</p><div class="review-heading"><h1>Room to change your mind.</h1><button class="text-button" id="decisions-back">Back to review</button></div><p class="lede">Undo a local decision or restore a removed bookmark. Restoring creates a new bookmark with new dates.</p><p id="decisions-empty" class="empty-message" hidden>No saved decisions yet.</p><div id="decisions-list"></div><h2>Removed bookmarks</h2><p class="trust-note">Recovery copies contain titles and URLs, stay on this device until restored or explicitly forgotten, and are lost if you uninstall Backburner or clear its storage. Restore cannot recover original IDs or dates, or undo Chrome sync across devices.</p><p id="recovery-empty">No recovery copies saved.</p><div id="recovery-list"></div><button id="more-decisions" class="text-button" hidden>Show more decisions</button></section>
+    <section id="help" hidden><p class="eyebrow">CLEAR BY DESIGN</p><div class="review-heading"><h1>Your bookmarks.<br>Your decisions.</h1><button id="help-back" class="text-button">Back to review</button></div>
+      <div class="reminder-settings"><h2>Quiet reminders</h2><p id="reminders-status" role="status">Loading reminder status...</p>
+        <button id="reminders-enable" class="open-button">Enable quiet reminders</button><button id="reminders-disable" class="text-button" hidden>Turn reminders off</button>
+        <p class="small-note">One notification at most every 7 elapsed days, only when something is eligible, between 09:00 and 18:00 local time. First opportunity is after one week. Later waits at least 14 elapsed days, then shares future reminder slots. These are initial product policies, not measured optima.</p>
+        <p class="small-note">Notifications contain no bookmark titles or URLs. Chrome must be able to run; sleep, Chrome being quit, Focus/Do Not Disturb and notification settings can delay or suppress them. No exact delivery time or proof you saw a reminder is claimed. Turning reminders off keeps decisions and recovery copies.</p>
+      </div>
+      <div class="help-grid"><article><h2>What happens to a bookmark?</h2><p>Remove bookmark deletes one Chrome bookmark after confirmation and saves a local recovery copy. Chrome may sync removal or restoration to other devices. Keep as reference pauses reviews and reminders for 365 elapsed days from your decision, including existing kept records. Choosing Keep again starts another year. Stop suggesting has no expiry and leaves the bookmark in Chrome. Undo or changing the bookmark’s URL makes it eligible again; renaming or moving it does not reset a decision. Later suppresses the bookmark for at least 14 days, including in Review more. Choosing Later again restarts that wait. Eligibility does not guarantee immediate selection or notification. An ignored reminder does not resolve anything or escalate; that item waits at least 14 days before another offer. Review decisions lets you undo local choices or restore removed bookmarks as new bookmarks. Recovery cannot restore original dates or IDs.</p>
+      <h2>Why this bookmark?</h2><p>New reviews use a random mix of all eligible bookmarks, without repeats within a session. Older recorded activity gets a gentle preference: selection weights range from 1 to 2, based on age relative to the oldest eligible bookmark. Recent saves can appear immediately; unknown dates keep the baseline chance and do not mean unused. There are no year quotas or guaranteed appearance dates. An unfinished review keeps its saved order. Reminders still rotate between due Later items and other eligible bookmarks, including expired references. Due Later and never-offered/oldest-offer priorities remain; tied other items use the same random mix. These are initial product policies, not measured optima. Dates are clues, not proof of whether you read something or still care about it. We do not access browser history.</p>
+      <h2>Coming back</h2><p>Enable optional quiet reminders once, or use the Backburner toolbar button for manual review. Declining notification permission leaves manual review available. Manual reviews have no fixed or learned batch size: finish whenever it feels enough, or keep going while eligible bookmarks remain. Review more starts a fresh eligible queue after completion. An unfinished session keeps its saved order, including sessions saved before this policy; a reminder never silently replaces it. Reminder reviews consider one bookmark. There are no streaks, daily quotas or automatic website visits.</p></article>
+      <article><h2>Data &amp; permissions</h2><p>Chrome’s bookmarks permission allows reading and changing bookmarks. Backburner reads them, removes only individually confirmed bookmarks, and creates bookmarks when you explicitly restore. Storage saves decisions, recovery and scheduling on this device. Alarms wake the local reminder scheduler; optional notification permission lets it display reminders. No account, remote code, page scanning, analytics service, or data transmission.</p><p>We store bookmark IDs, URL fingerprints to recognize changed bookmarks, decisions, counts, and removal recovery copies. Separate reminder records store enablement, attempt times, rotation and pending bookmark IDs/fingerprints, not titles or URLs. They are operational scheduling state, not feedback or impression analytics. Recovery copies include titles, URLs, and original location information. They are retained until restored or explicitly forgotten. Fingerprints are not anonymization. Local records do not sync, and uninstalling removes them. Chrome’s own bookmark sync is independent.</p><p>Opening a bookmark visits that website normally. The site’s own privacy practices apply.</p>
+      <h2>Appearance</h2><p>Backburner follows the light or dark preference reported by your browser, usually from your system, and updates when it changes. It does not copy the colors of installed Chrome themes or save a separate theme setting.</p>
+      <h2>Help &amp; privacy</h2><p><a href="https://github.com/rioscesar/Backburner/blob/experiment/first-review/PRIVACY.md" target="_blank" rel="noreferrer">Full privacy policy ↗</a></p><p><a href="https://github.com/rioscesar/Backburner/issues" target="_blank" rel="noreferrer">Report a problem ↗</a> — reports are public. Never include personal bookmarks or browsing data.</p></article></div></section>
+    <section id="locked" class="centered" hidden><p class="eyebrow">ONE REVIEW AT A TIME</p><h1>You have a review open.</h1><p class="lede">Return to your other Backburner tab to keep your decisions in one place.</p><button id="reload-locked" class="primary">Try this tab again</button></section>
+    <section id="fatal" class="centered" hidden><p class="eyebrow">LET’S PAUSE HERE</p><h1>We couldn’t load your review.</h1><p class="lede">Reload to try again. Pending removal or restoration may need recovery inspection. If this continues, contact support; don’t uninstall if you want to preserve local decisions.</p><button id="reload-fatal" class="primary">Reload</button></section>
+  </main>
+  <dialog id="confirm-dialog" aria-labelledby="confirm-title"><form method="dialog"><h2 id="confirm-title"></h2><p id="confirm-detail"></p><label id="restore-folder-label" hidden>Destination<select id="restore-folder"></select></label><div class="dialog-actions"><button id="confirm-cancel" value="cancel" autofocus>Cancel</button><button id="confirm-yes" value="confirm">Confirm</button></div></form></dialog>
+  <footer><span>A place for unfinished curiosity.</span><span>LOCAL BY DESIGN <i aria-hidden="true"></i></span></footer>
+</body>
+</html>
