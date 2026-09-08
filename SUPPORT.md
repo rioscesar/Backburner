@@ -8,6 +8,27 @@ Choose **Review decisions → Removed bookmarks → Restore**. Confirm the desti
 
 Recovery copies persist across browser restarts until restored or explicitly forgotten. **Do not uninstall or clear extension data if you need a copy: that erases local recovery.** Disabling preserves it. Do not downgrade to an older version to troubleshoot.
 
+## Moving from developer preview to the store
+
+Version 0.1.10 is pending Chrome Web Store review; a published installation link
+is not yet available. The intended initial distribution is Unlisted, installable
+by anyone with the link after approval and publication.
+
+An unpacked copy and a store copy may have different extension IDs. Local
+decisions, session progress, reminder settings and recovery copies do not
+automatically transfer between different IDs. There is no import/migration tool
+in this release. Sharing the same bookmarks through Chrome does not share
+Backburner's local recovery data.
+
+Before uninstalling the old copy, open its **Review decisions → Removed bookmarks**
+and restore anything you need or explicitly forget copies you no longer want.
+If you are unsure or an operation is pending, keep that installation and its
+storage. Disabling it preserves the data; uninstalling does not.
+
+When using the store copy, disable the old copy to avoid running two independent
+review/reminder systems against the same Chrome bookmarks. Check the new copy's
+reminder settings explicitly rather than assuming your old preference transferred.
+
 ## Pending operations
 
 An unconfirmed removal can mean Chrome still has the bookmark or that removal completed before its result was saved. Inspect recovery; Backburner never automatically retries deletion. If the original bookmark exists, it will not create a duplicate. You can inspect Chrome and explicitly forget an unneeded copy.

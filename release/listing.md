@@ -1,6 +1,13 @@
 # Store listing material — 0.1.10
 
-Draft, not submitted. Human usability and publisher checks remain.
+Version 0.1.10 was submitted on September 7, 2026; the dashboard shows
+**Pending review**. Approval, publication and store-installed behavior are not
+yet confirmed. The copy below is maintained listing material, not an export of
+the submitted dashboard fields.
+
+Publisher name: Entrep Technologies
+
+Initial distribution: Unlisted (intended; confirm the saved setting before sharing)
 
 Name: Backburner
 
@@ -42,8 +49,26 @@ Permissions: bookmarks for reading, confirmed single-leaf removal and explicit r
 
 The extension locally handles bookmark URLs and recovery titles/content. Separate operational scheduling records store IDs/fingerprints and attempt times, not bookmark titles/URLs or notification impressions. It transmits none of these to the developer. There are no completion survey questions. Match actual dashboard data-category questions to this policy before owner certification; do not claim no data is processed. Explain optional notification presentation and blocked/disabled behavior in the submitted permission justifications.
 
-Privacy: https://github.com/rioscesar/Backburner/blob/experiment/first-review/PRIVACY.md
+Homepage: https://github.com/rioscesar/Backburner
+Privacy: https://github.com/rioscesar/Backburner/blob/main/PRIVACY.md
 Support: https://github.com/rioscesar/Backburner/issues
-Category proposal: Productivity. English.
+Category: Workflow & Planning. Language: English.
 
-Use the icon, actual packaged UI screenshots and promo tile from this release. Final publisher identity, regions, dashboard requirements and certification remain owner checks. Prefer a durable release/main privacy URL after approved merge, before deleting the implementation branch.
+## Upload assets
+
+- Store icon: `icons/icon128.png` (128 x 128).
+- Screenshots: `release/screenshot-review.png` and `release/screenshot-decisions.png`
+  (1280 x 800, RGB PNG without alpha; synthetic bookmarks).
+- Small promo tile: `release/promo-tile.png` (440 x 280, RGB PNG without alpha).
+- No promo video or marquee tile is supplied.
+
+These paths are relative to the repository root. Upload the normal
+`dist/backburner.zip`, never `dist/notification-test/backburner-notification-test.zip`.
+The submitted 0.1.10 artifact's SHA256 is
+`37E83B1C82E73174C33FC0A997B0467FD878F35DA38AB4CC5172A2BD279F3250`.
+Documentation and promo-image updates do not change the runtime package.
+
+After review, confirm publication, Unlisted visibility, geographic availability
+and a real store installation before distributing the link. Publisher legal
+declarations remain the owner's responsibility; the publisher name alone does
+not establish company registration or trader status.
