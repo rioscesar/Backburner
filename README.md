@@ -6,18 +6,32 @@ Backburner brings existing Chrome bookmarks into a small review. Open something 
 
 ![Backburner review](release/screenshot-review.png)
 
-## Status: developer preview 0.1.10
+## Status: Chrome Web Store review pending — 0.1.10
 
-This is a working extension candidate, not a Chrome Web Store release. Manual reviews are intentionally self-paced, with no forced default or learned limit. Public launch still needs a newcomer walkthrough and store submission/review.
+Version **0.1.10 was submitted to the Chrome Web Store on September 7, 2026**
+and is **pending review**, not yet approved or published. The intended initial
+release is **Unlisted**, under the publisher name **Entrep Technologies**:
+installation through a shareable store link rather than Developer mode.
+No verified store installation link is available yet.
 
-## Try locally
+Manual reviews are intentionally self-paced, with no forced default or learned
+limit. After approval and publication, the store link will be added here.
+Store-installed behavior and newcomer usability still need confirmation;
+submission alone does not establish either.
 
-1. Download or clone the implementation branch `experiment/first-review`.
+## Developer preview (optional)
+
+1. Download or clone this repository's `main` branch.
 2. Open `chrome://extensions` in Chrome and enable **Developer mode**.
 3. Choose **Load unpacked** and select the folder containing `manifest.json`.
 4. Open Backburner from the Extensions menu; pin it if useful.
 
 On Windows, `npm run package` creates `dist/backburner.zip` and extracts its exact runtime contents to `dist/unpacked`. Load the latter to test the package. A ZIP is a store upload artifact, not a one-click consumer install.
+
+**Already using an unpacked copy?** Keep it until you have dealt with any local
+recovery copies. A store installation may have a different extension ID and will
+not automatically inherit that copy's decisions, progress or recovery data.
+See [switching installations](SUPPORT.md#moving-from-developer-preview-to-the-store).
 
 ### Temporary 30-second notification test
 
